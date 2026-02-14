@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rg" gradientUnits="userSpaceOnUse" x1="16" y1="16" x2="112" y2="112">
+      <stop offset="0%" stop-color="#4F6EF7"/>
+      <stop offset="55%" stop-color="#18C9E8"/>
+      <stop offset="100%" stop-color="#2DD4A0"/>
+    </linearGradient>
+    <linearGradient id="cg" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#5B7BF8"/>
+      <stop offset="100%" stop-color="#18C9E8"/>
+    </linearGradient>
+    <radialGradient id="dotg" cx="38%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#A7F3D0"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="26" fill="#080F1C"/>
+  <!-- Concentric arcs centred at ~(64,62) -->
+  <path d="M 22 66 A 42 42 0 1 1 42 96" fill="none" stroke="url(#rg)" stroke-width="4.5" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 34 63 A 30 30 0 1 1 48 85" fill="none" stroke="url(#rg)" stroke-width="4.5" stroke-linecap="round" opacity="0.65"/>
+  <path d="M 45 60 A 19 19 0 1 1 55 75" fill="none" stroke="url(#rg)" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- Glow + dot -->
+  <circle cx="64" cy="58" r="11" fill="rgba(16,185,129,0.15)"/>
+  <circle cx="64" cy="58" r="6" fill="url(#dotg)"/>
+  <circle cx="64" cy="58" r="2.8" fill="#D1FAE5" opacity="0.9"/>
+  <!-- Cursor -->
+  <g transform="translate(50,71) rotate(48.2)">
+    <path d="M 0 0 L -7 21 L 0 17 L 7 21 Z" fill="url(#cg)"/>
+  </g>
+</svg>
