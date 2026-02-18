@@ -1,0 +1,1575 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SEO Prospector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="panel.css" />
+  <style>
+    /* ===== ACCOUNT TABS ===== */
+    #route-account.route.active { display:flex !important; flex-direction:column; overflow:hidden; padding:0; }
+    /* Tab bar — same pill style as site */
+    .acctExtTabs { display:flex; align-items:center; gap:3px; padding:4px; margin:12px 14px 0; background:#f1f4f9; border:1px solid #e4e8ef; border-radius:10px; width:fit-content; flex-shrink:0; }
+    .acctExtTab { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:7px; font-size:12px; font-weight:600; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:all .15s ease; white-space:nowrap; }
+    .acctExtTab:hover:not(.active) { color:#0f1523; background:rgba(255,255,255,0.6); }
+    .acctExtTab.active { color:#0f1523; background:#fff; box-shadow:0 1px 2px rgba(17,24,39,0.08),0 2px 8px rgba(17,24,39,0.06); }
+    .acctExtPanel { display:none !important; }
+    .acctExtPanel.active { display:block !important; overflow-y:auto; flex:1; }
+    /* Cards layout inside account panels */
+    .acctExtCards { display:flex; flex-direction:column; gap:10px; padding:12px 14px 20px; }
+    .acctExtCards .card { padding:14px 16px; }
+    /* Profile card head */
+    .acctExtProfileHead { display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e4e8ef; }
+    .acctExtAvatar { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#2159da); color:#fff; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800; flex-shrink:0; }
+    .acctExtName { font-size:15px; font-weight:800; color:#0f1523; margin-bottom:2px; }
+    .acctExtEmail { font-size:12.5px; color:#6b7280; }
+    .acctExtCardHeader { display:flex; align-items:center; gap:9px; margin:-14px -16px 14px; padding:12px 16px; border-bottom:1px solid #e4e8ef; border-radius:6px 6px 0 0; background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(124,58,237,0.03)); }
+    .acctExtCardHeader--indigo { background:linear-gradient(135deg,rgba(99,102,241,0.07),rgba(59,130,246,0.03)); }
+    .acctExtCardHeader--purple { background:linear-gradient(135deg,rgba(139,92,246,0.07),rgba(99,102,241,0.03)); }
+    .acctExtCardIcon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:rgba(59,130,246,0.1); color:#2563eb; border:1px solid rgba(59,130,246,0.18); }
+    .acctExtCardIcon--indigo { background:rgba(99,102,241,0.1); color:#4f46e5; border-color:rgba(99,102,241,0.2); }
+    .acctExtCardIcon--purple { background:rgba(139,92,246,0.1); color:#7c3aed; border-color:rgba(139,92,246,0.2); }
+    .acctExtCardTitle { font-size:13px; font-weight:800; color:#111827; letter-spacing:-0.01em; }
+    body.theme-dark .acctExtCardHeader { border-bottom-color:#1e2f52; background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(124,58,237,0.05)); }
+    body.theme-dark .acctExtCardHeader--indigo { background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(59,130,246,0.05)); }
+    body.theme-dark .acctExtCardHeader--purple { background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(99,102,241,0.05)); }
+    body.theme-dark .acctExtCardIcon { background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.25); color:#60a5fa; }
+    body.theme-dark .acctExtCardIcon--indigo { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.25); color:#a5b4fc; }
+    body.theme-dark .acctExtCardIcon--purple { background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.25); color:#c4b5fd; }
+    body.theme-dark .acctExtCardTitle { color:#e8effd; }
+    /* Appearance rows — site style */
+    .acctAppRow { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 14px; border-radius:8px; background:#f8f9fc; border:1px solid #e4e8ef; margin-top:8px; }
+    .acctAppRowInfo { display:flex; flex-direction:column; gap:2px; }
+    .acctAppRowLabel { font-size:13px; font-weight:700; color:#0f1523; }
+    .acctAppRowSub { font-size:11px; color:#6b7280; }
+    /* Toggle — site style (42×24, gray track) */
+    .acctToggle { position:relative; width:42px; height:24px; flex-shrink:0; display:inline-block; cursor:pointer; }
+    .acctToggle input { opacity:0; width:0; height:0; position:absolute; }
+    .acctToggleTrack { position:absolute; inset:0; border-radius:999px; background:#e4e8ef; transition:background 0.2s ease; cursor:pointer; }
+    .acctToggleTrack::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.18); transition:transform 0.2s ease; }
+    .acctToggle input:checked + .acctToggleTrack { background:#3b82f6; }
+    .acctToggle input:checked + .acctToggleTrack::after { transform:translateX(18px); }
+    /* Dark mode */
+    body.theme-dark .acctAppRow { background:#192340; border-color:#1e2f52; }
+    body.theme-dark .acctAppRowLabel { color:#e8effd; }
+    body.theme-dark .acctAppRowSub { color:#8a9dc0; }
+    body.theme-dark .acctToggleTrack { background:#1e2f52; }
+    body.theme-dark .acctToggle input:checked + .acctToggleTrack { background:#3b82f6; }
+    /* Lang labels inside acctAppRow */
+    .acctAppRow .langSwitchGroup { background:transparent; padding:0; }
+    .acctAppRow .langSwitchLabel { color:#6b7280; font-size:11px; font-weight:700; opacity:1; }
+    .acctAppRow .langSwitchGroup[data-lang="en"] .langSwitchLabel--en,
+    .acctAppRow .langSwitchGroup[data-lang="fr"] .langSwitchLabel--fr { color:#111827; }
+    body.theme-dark .acctAppRow .langSwitchLabel { color:#8a9dc0; }
+    body.theme-dark .acctAppRow .langSwitchGroup[data-lang="en"] .langSwitchLabel--en,
+    body.theme-dark .acctAppRow .langSwitchGroup[data-lang="fr"] .langSwitchLabel--fr { color:#e8effd; }
+    /* Sign out danger zone — mirrors site design */
+    .extDangerZoneRow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:9px; border:1px solid rgba(239,68,68,0.2); background:rgba(239,68,68,0.03); }
+    .extDangerZoneLeft { display:flex; align-items:center; gap:10px; }
+    .extDangerZoneIcon { width:32px; height:32px; border-radius:7px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.15); color:#dc2626; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .extDangerZoneTitle { font-size:13px; font-weight:700; color:#dc2626; line-height:1.2; }
+    .extDangerZoneSub { font-size:11px; color:#9ca3af; margin-top:2px; }
+    .extBtnDanger { border-color:#fecaca !important; color:#c0392b !important; background:#fff5f5 !important; font-size:11.5px; padding:6px 13px; flex-shrink:0; }
+    .extBtnDanger:hover { background:#fee2e2 !important; }
+    body.theme-dark .extDangerZoneRow { background:rgba(239,68,68,0.06); border-color:rgba(239,68,68,0.25); }
+    body.theme-dark .extDangerZoneSub { color:#4b6a8a; }
+    body.theme-dark .extBtnDanger { background:rgba(239,68,68,0.12) !important; border-color:rgba(239,68,68,0.3) !important; color:#f87171 !important; }
+    body.theme-dark .extBtnDanger:hover { background:rgba(239,68,68,0.22) !important; }
+    /* Security action rows — same design as Appearance rows */
+    .secActionRow { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 14px; border-radius:8px; background:#f8f9fc; border:1px solid #e4e8ef; margin-top:8px; }
+    .secActionRowInfo { display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
+    .secActionRowIcon { color:#6b7280; flex-shrink:0; }
+    .secActionRowLabel { font-size:13px; font-weight:700; color:#0f1523; line-height:1.3; }
+    .secActionRowHint { font-size:11px; color:#9ca3af; margin-top:1px; line-height:1.3; }
+    .secActionBtn { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:600; color:#3b82f6; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.15); cursor:pointer; transition:all .15s ease; white-space:nowrap; }
+    .secActionBtn:hover { background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.3); }
+    body.theme-dark .secActionRow { background:#0f1e34; border-color:#1e2f52; }
+    body.theme-dark .secActionRowLabel { color:#e8effd; }
+    body.theme-dark .secActionRowIcon { color:#4b6a8a; }
+    body.theme-dark .secActionRow { border-bottom-color:#1e2f52; }
+    body.theme-dark .secActionRowLabel { color:#e8effd; }
+    body.theme-dark .secActionRowHint { color:#4b6a8a; }
+    body.theme-dark .secActionRowIcon { color:#4b6a8a; }
+    body.theme-dark .secActionBtn { color:#60a5fa; background:rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.2); }
+    body.theme-dark .secActionBtn:hover { background:rgba(59,130,246,0.22); }
+    /* Dark mode */
+    body.theme-dark .acctExtTabs { background:#0f172a; border-color:#1e2f52; }
+    body.theme-dark .acctExtTab { color:#4b6a8a; }
+    body.theme-dark .acctExtTab:hover:not(.active) { color:#a0b4d4; background:rgba(255,255,255,0.05); }
+    body.theme-dark .acctExtTab.active { color:#e8effd; background:#1a2a42; box-shadow:0 1px 2px rgba(0,0,0,0.3),0 2px 8px rgba(0,0,0,0.2); }
+    body.theme-dark .acctExtProfileHead { border-bottom-color:#1e2f52; }
+    body.theme-dark .acctExtName { color:#e8effd; }
+    body.theme-dark .acctExtEmail { color:#4b6a8a; }
+    body.theme-dark .acctExtSecurityDivider { border-top-color:#1e2f52; }
+
+    /* ===== SIDEBAR — always dark, all states ===== */
+    .sidebar {
+      background: linear-gradient(180deg, #0e1730 0%, #0a1122 100%) !important;
+      border-right: 1px solid rgba(255,255,255,0.04) !important;
+    }
+
+    /* Nav items */
+    .sidebar .menu__item { color: #9ab0cc !important; border-left: 2px solid transparent !important; }
+    .sidebar .menu__item:hover { background: rgba(255,255,255,0.07) !important; color: #cfe0ff !important; }
+    .sidebar .menu__item.active {
+      background: linear-gradient(90deg, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0.08) 100%) !important;
+      border-left-color: #3b82f6 !important;
+      color: #e8f0ff !important;
+    }
+
+    /* Icons — dark-friendly box */
+    .sidebar .menu__icon {
+      background: rgba(255,255,255,0.06) !important;
+      border-color: rgba(255,255,255,0.09) !important;
+    }
+    .sidebar .menu__item:hover .menu__icon {
+      background: rgba(255,255,255,0.12) !important;
+      border-color: rgba(255,255,255,0.16) !important;
+      color: #93c5fd !important;
+      transform: none !important;
+    }
+    .sidebar .menu__item.active .menu__icon {
+      background: rgba(59,130,246,0.28) !important;
+      border-color: rgba(59,130,246,0.45) !important;
+      color: #93c5fd !important;
+    }
+
+    /* Logo */
+    .sidebar .logo__txt strong { color: #eaf0ff !important; }
+    .sidebar .logo__txt span   { color: #8aabcc !important; }
+
+    /* Nav badge */
+    .sidebar .navBadge { background: rgba(59,130,246,0.22) !important; color: #bfdbfe !important; }
+
+    /* Stats section */
+    .sidebar .sidebar__stats { border-top-color: rgba(255,255,255,0.06) !important; }
+    .sidebar .stat { color: #8fa8c4 !important; }
+    /* stat values — exclude .badge elements to preserve badge colours */
+    .sidebar .stat strong,
+    .sidebar .stat span:last-child:not([class*="badge"]) { color: #dce8f8 !important; }
+
+    /* Status badge (RUNNING/PAUSED) — readable on dark */
+    .sidebar .badge.badge-running {
+      background: rgba(16,185,129,0.22) !important;
+      border-color: rgba(16,185,129,0.35) !important;
+      color: #6ee7b7 !important;
+    }
+    .sidebar .badge.badge-paused,
+    .sidebar .badge.info {
+      background: rgba(148,163,184,0.15) !important;
+      border-color: rgba(148,163,184,0.22) !important;
+      color: #94a3b8 !important;
+    }
+
+    /* Seat block — always dark */
+    .sidebarSeatBlock {
+      background: rgba(255,255,255,0.04) !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    #sidebarSeatValue {
+      background: rgba(59,130,246,0.18) !important;
+      border-color: rgba(59,130,246,0.30) !important;
+      color: #bfdbfe !important;
+    }
+    .sidebarAddUserBtn {
+      background: rgba(255,255,255,0.05) !important;
+      border-color: rgba(255,255,255,0.14) !important;
+      color: #a0bcdc !important;
+    }
+    .sidebarAddUserBtn:hover {
+      background: rgba(255,255,255,0.10) !important;
+      border-color: rgba(255,255,255,0.22) !important;
+    }
+    .sidebarSeatUser {
+      background: rgba(255,255,255,0.05) !important;
+      border-color: rgba(255,255,255,0.10) !important;
+    }
+    .sidebarSeatName           { color: #c4d9f0 !important; }
+    .sidebarAccountFirstName   { color: #e8f0fc !important; }
+    .sidebarAccountPlanHint    { color: #ffffff !important; }
+    .sidebarBottomDivider      { background: rgba(255,255,255,0.06) !important; }
+
+    /* ── Upsell card ── */
+    .sidebarUpsell {
+      position: relative;
+      margin: 18px 1px 4px;
+      padding: 10px 13px;
+      background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(99,102,241,0.12) 100%);
+      border: 1px solid rgba(99,130,246,0.3);
+      border-radius: 5px;
+    }
+    .sidebarUpsell__dismiss {
+      position: absolute;
+      top: 7px; right: 8px;
+      width: 18px; height: 18px;
+      padding: 0;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      transition: background .15s, border-color .15s;
+    }
+    .sidebarUpsell__dismiss:hover { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.5); }
+    .sidebarUpsell__msg {
+      font-size: 11px;
+      font-weight: 600;
+      color: #e0eaff;
+      line-height: 1.4;
+      margin-bottom: 5px;
+      padding-right: 20px;
+    }
+    .sidebarUpsell__plan {
+      font-size: 10px;
+      font-weight: 700;
+      color: #93c5fd;
+      letter-spacing: 0.03em;
+      margin-bottom: 8px;
+    }
+    .sidebarUpsell__btn {
+      width: 100%;
+      padding: 6px 0;
+      background: linear-gradient(90deg, #3a86ff 0%, #6366f1 100%);
+      border: none;
+      border-radius: 3px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+    }
+    .sidebarUpsell__btn:hover { opacity: 0.88; }
+    /* Owner tag */
+    .sidebarSeatOwnerTag {
+      margin-left: auto !important;
+      font-size: 9px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+      color: #93c5fd !important;
+      background: rgba(59,130,246,0.15) !important;
+      border: 1px solid rgba(59,130,246,0.28) !important;
+      border-radius: 3px !important;
+      padding: 1px 5px !important;
+      line-height: 1.4 !important;
+      flex-shrink: 0 !important;
+    }
+    /* Truncate long names in seat list */
+    .sidebarSeatName {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      min-width: 0 !important;
+      flex: 1 !important;
+    }
+    .sidebarSeatUser {
+      overflow: hidden !important;
+    }
+    /* Role badge next to account name */
+    .sidebarAccountNameRow {
+      display: flex !important;
+      align-items: center !important;
+      gap: 5px !important;
+      min-width: 0 !important;
+    }
+    .sidebarRoleBadge {
+      font-size: 9px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+      border-radius: 3px !important;
+      padding: 1px 5px !important;
+      line-height: 1.4 !important;
+      flex-shrink: 0 !important;
+    }
+    .sidebarRoleBadge.is-owner {
+      color: #93c5fd !important;
+      background: rgba(59,130,246,0.15) !important;
+      border: 1px solid rgba(59,130,246,0.28) !important;
+    }
+    .sidebarRoleBadge.is-member {
+      color: #9ca3af !important;
+      background: rgba(148,163,184,0.12) !important;
+      border: 1px solid rgba(148,163,184,0.22) !important;
+    }
+
+    /* ── Dashboard Open App Hub ──────────────────────── */
+    .dashHub {
+      background: #ffffff !important;
+      border: 1px solid #dde6f0 !important;
+      border-radius: 8px !important;
+      padding: 12px !important;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.05) !important;
+      min-height: 0 !important;
+      height: auto !important;
+      /* grid child: span full width */
+      grid-column: 1 / -1 !important;
+    }
+    .dashHubLabel {
+      display: block !important;
+      margin: 0 0 9px 0 !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0 !important;
+      text-transform: none !important;
+      color: #111827 !important;
+    }
+    .dashHubGrid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 6px !important;
+    }
+    .dashHubBtn {
+      display: flex;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 5px !important;
+      padding: 10px 6px !important;
+      height: 62px !important;
+      min-height: 0 !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important;
+      background: #f8fafc !important;
+      color: #374151 !important;
+      cursor: pointer !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      line-height: 1.1 !important;
+      transition: background .13s, border-color .13s, color .13s !important;
+    }
+    .dashHubBtn:hover {
+      background: #eff6ff !important;
+      border-color: #bfdbfe !important;
+      color: #1d4ed8 !important;
+    }
+    .dashHubIcon {
+      width: 18px !important;
+      height: 18px !important;
+      flex-shrink: 0 !important;
+      color: #6b7280 !important;
+      transition: color .13s !important;
+    }
+    .dashHubBtn:hover .dashHubIcon {
+      color: #2563eb !important;
+    }
+
+    /* dark mode overrides for hub */
+    body.theme-dark .dashHub {
+      background: #111827 !important;
+      border-color: #243244 !important;
+      box-shadow: none !important;
+    }
+    body.theme-dark .dashHubLabel { color: #c8d8ec !important; }
+    body.theme-dark .dashHubBtn {
+      background: #0f172a !important;
+      border-color: #243244 !important;
+      color: #c8d8ec !important;
+    }
+    body.theme-dark .dashHubBtn:hover {
+      background: #1a2a42 !important;
+      border-color: #3b5a8a !important;
+      color: #93c5fd !important;
+    }
+    body.theme-dark .dashHubIcon { color: #4b6a8a !important; }
+    body.theme-dark .dashHubBtn:hover .dashHubIcon { color: #60a5fa !important; }
+
+    /* ===== CHAT ROUTE ===== */
+    .chatExtShell { display:flex; flex-direction:column; height:100%; }
+    .chatExtHeader { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-bottom:1px solid #e5e7eb; flex-shrink:0; }
+    .chatExtChannel { display:flex; align-items:center; gap:4px; font-weight:800; font-size:13px; color:#111827; }
+    .chatExtHash { font-size:16px; font-weight:300; color:#9ca3af; line-height:1; }
+    .chatExtOpenBtn { display:flex; align-items:center; gap:4px; font-size:10px; font-weight:700; color:#3b82f6; background:none; border:none; cursor:pointer; padding:0; }
+    .chatExtOpenBtn:hover { text-decoration:underline; }
+    .chatExtMessages { flex:1; overflow-y:auto; padding:8px 0; display:flex; flex-direction:column; min-height:0; }
+    .chatExtEmpty { flex:1; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:12px; padding:20px; text-align:center; }
+    .chatExtMsg { display:flex; flex-direction:column; padding:2px 12px; }
+    .chatExtMsg--own { align-items:flex-end; }
+    .chatExtMsgMeta { font-size:10px; color:#6b7280; margin-bottom:2px; }
+    .chatExtMsgMeta .chatExtMsgName { font-weight:700; color:#374151; margin-right:4px; }
+    .chatExtBubble { display:inline-block; padding:6px 10px; border-radius:10px; border-bottom-left-radius:3px; font-size:12px; line-height:1.45; background:#f3f4f6; border:1px solid #e5e7eb; color:#111827; white-space:pre-wrap; word-break:break-word; max-width:80%; }
+    .chatExtMsg--own .chatExtBubble { background:linear-gradient(135deg,#3b82f6,#2159da); border-color:transparent; color:#fff; border-bottom-left-radius:10px; border-bottom-right-radius:3px; }
+    .chatExtDateDivider { display:flex; align-items:center; gap:8px; padding:6px 12px; }
+    .chatExtDateDivider::before,.chatExtDateDivider::after { content:""; flex:1; height:1px; background:#e5e7eb; }
+    .chatExtDateDivider span { font-size:10px; color:#9ca3af; white-space:nowrap; }
+    .chatExtMsg--stacked { padding-top:1px; }
+    .chatExtInputRow { display:flex; gap:6px; align-items:flex-end; padding:8px 10px; border-top:1px solid #e5e7eb; flex-shrink:0; }
+    .chatExtInput { flex:1; border:1px solid #d1d5db; border-radius:8px; padding:7px 10px; font-size:12px; font-family:inherit; resize:none; outline:none; max-height:80px; overflow-y:auto; line-height:1.4; background:#f9fafb; }
+    .chatExtInput:focus { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.15); }
+    .chatExtSendBtn { width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#3b82f6,#2159da); border:none; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+    .chatExtSendBtn:disabled { opacity:0.4; cursor:not-allowed; }
+    /* dark mode */
+    body.theme-dark .chatExtHeader { border-bottom-color:#1f2f58; }
+    body.theme-dark .chatExtChannel { color:#c8d8ec; }
+    body.theme-dark .chatExtBubble { background:#1a2a42; border-color:#243244; color:#c8d8ec; }
+    body.theme-dark .chatExtMsg--own .chatExtBubble { background:linear-gradient(135deg,#3b82f6,#2159da); color:#fff; border-color:transparent; }
+    body.theme-dark .chatExtInputRow { border-top-color:#1f2f58; }
+    body.theme-dark .chatExtInput { background:#0f172a; border-color:#243244; color:#c8d8ec; }
+    body.theme-dark .chatExtMsgMeta .chatExtMsgName { color:#a0b4d4; }
+    body.theme-dark .chatExtMsgMeta { color:#4b6a8a; }
+    body.theme-dark .chatExtDateDivider::before, body.theme-dark .chatExtDateDivider::after { background:#1f2f58; }
+
+    /* ===== NOTIFICATIONS BELL + DROPDOWN ===== */
+    .notifBellBtn { position:relative; width:40px; height:40px; border-radius:8px; background:none; border:none; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:color .15s, background .15s; }
+    .notifBellBtn:hover { background:#f1f5f9; color:#0f172a; }
+    .notifBellBadge { position:absolute; top:3px; right:3px; min-width:14px; height:14px; border-radius:7px; background:#ef4444; color:#fff; font-size:9px; font-weight:800; display:grid; place-items:center; padding:0 3px; line-height:1; }
+    .notifBellWrap { position:relative; }
+    .notifDropdown { position:fixed; top:62px; right:12px; width:min(310px, calc(100vw - 120px)); background:#fff; border:1px solid #e4e8ef; border-radius:14px; box-shadow:0 4px 16px rgba(17,24,39,0.09),0 20px 48px rgba(17,24,39,0.13); z-index:9999; display:flex; flex-direction:column; max-height:min(400px, calc(100vh - 80px)); overflow:hidden; }
+    .notifDropdownHeader { display:flex; align-items:center; justify-content:space-between; padding:14px 18px 12px; flex-shrink:0; }
+    .notifDropdownTitle { font-weight:700; font-size:15px; color:#0f1523; }
+    .notifUnreadBadge { font-size:11px; font-weight:700; color:#fff; background:#ef4444; border-radius:20px; padding:2px 7px; line-height:1.5; }
+    .notifMarkAllBtn { font-size:11px; color:#3b82f6; background:none; border:none; cursor:pointer; padding:0; font-weight:600; }
+    .notifMarkAllBtn:hover { text-decoration:underline; }
+    .notifDropdownList { overflow-y:auto; flex:1; }
+    .notifExtEmpty { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#9ca3af; padding:32px 18px; text-align:center; gap:6px; }
+    .notifExtEmptyIcon { color:#9ca3af; margin-bottom:2px; }
+    .notifExtEmptyTitle { font-size:13px; font-weight:500; color:#6b7280; }
+    .notifExtEmptySub { font-size:12px; color:#9ca3af; }
+    .notifExtItem { display:flex; align-items:flex-start; gap:12px; padding:12px 18px; border-top:1px solid #e4e8ef; cursor:default; transition:background .15s; }
+    .notifExtItem--unread { background:rgba(59,130,246,0.04); }
+    .notifExtPill { width:32px; height:32px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .notifExtDot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .notifExtBody { flex:1; min-width:0; }
+    .notifExtItemTitle { font-size:13px; line-height:1.4; color:#0f1523; }
+    .notifExtItemTitle--unread { font-weight:700; }
+    .notifExtMsg { font-size:12px; color:#6b7280; margin-top:2px; line-height:1.4; }
+    .notifExtMeta { display:flex; align-items:center; gap:8px; margin-top:5px; }
+    .notifExtTime { font-size:11px; color:#9ca3af; }
+    .notifExtLink { font-size:11px; color:#3b82f6; font-weight:600; }
+    .notifExtUnreadDot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .notifExtItem--link { cursor:pointer; }
+    .notifExtItem--link:hover { background:#f0f3f9; }
+    /* dark mode */
+    body.theme-dark .notifBellBtn { color:#7a96b8; }
+    body.theme-dark .notifBellBtn:hover { background:#1a2a42; color:#c8d8ec; }
+    body.theme-dark .notifDropdown { background:#131f3a; border-color:#1e2f52; box-shadow:0 4px 16px rgba(0,0,0,0.35),0 20px 48px rgba(0,0,0,0.45); }
+    body.theme-dark .notifDropdownTitle { color:#e8effd; }
+    body.theme-dark .notifExtItem { border-top-color:#1e2f52; }
+    body.theme-dark .notifExtItem--unread { background:rgba(59,130,246,0.08); }
+    body.theme-dark .notifExtItemTitle { color:#e8effd; }
+    body.theme-dark .notifExtMsg { color:#8a9dc0; }
+    body.theme-dark .notifExtItem--link:hover { background:#192340; }
+
+    /* ===== SUPPORT BUTTON ===== */
+    .supportBtn { width:40px; height:40px; border-radius:8px; background:none; border:none; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:color .15s, background .15s; }
+    .supportBtn:hover { background:#f1f5f9; color:#0f172a; }
+    body.theme-dark .supportBtn { color:#7a96b8; }
+    body.theme-dark .supportBtn:hover { background:#1a2a42; color:#c8d8ec; }
+
+    /* ===== TEAM OVERLAY ===== */
+    .teamOverlay { position:absolute; inset:0; background:#fff; z-index:8500; display:none; flex-direction:column; transform:translateY(100%); transition:transform 0.22s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+    .teamOverlay.open { display:flex; transform:translateY(0); pointer-events:auto; }
+    .teamOverlayHeader { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0; flex-shrink:0; background:#fff; }
+    .teamOverlayTitle { font-size:14px; font-weight:800; color:#111827; flex:1; }
+    .teamStatsMeta { font-size:11px; color:#9ca3af; }
+    body.theme-dark .teamOverlay { background:#0b1628; }
+    body.theme-dark .teamOverlayHeader { background:#0b1628; border-bottom-color:#1a2a42; }
+    body.theme-dark .teamOverlayTitle { color:#c8d8ec; }
+
+    /* ===== SUPPORT OVERLAY ===== */
+    .supportOverlay { position:absolute; inset:0; background:#f0f3f9; z-index:8500; display:none; flex-direction:column; transform:translateY(100%); transition:transform 0.22s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+    .supportOverlay.open { display:flex; transform:translateY(0); pointer-events:auto; }
+    /* Header */
+    .supportOverlayHeader { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid #e4e8ef; flex-shrink:0; background:#fff; }
+    .supportBackBtn { width:28px; height:28px; border-radius:6px; background:none; border:none; color:#374151; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .supportBackBtn:hover { background:#f1f5f9; }
+    .supportOverlayTitle { font-size:14px; font-weight:800; color:#111827; flex:1; }
+    .supportNewTicketBtn { display:flex; align-items:center; gap:5px; padding:5px 11px; border-radius:8px; border:none; background:#3b82f6; color:#fff; font-size:11px; font-weight:700; cursor:pointer; transition:background .15s; flex-shrink:0; }
+    .supportNewTicketBtn:hover { background:#2563eb; }
+    /* Tabs — pill style (matches site) */
+    .supportExtTabs { display:flex; gap:4px; padding:4px; background:#f8f9fc; border:1px solid #e4e8ef; border-radius:10px; flex-shrink:0; margin:10px 12px; align-self:flex-start; }
+    .supportExtTabBtn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border:none; background:transparent; font-size:12px; font-weight:600; color:#6b7280; cursor:pointer; border-radius:8px; transition:all .15s ease; }
+    .supportExtTabBtn:hover { color:#0f1523; background:#ffffff; }
+    .supportExtTabBtn.active { color:#0f1523; background:#ffffff; box-shadow:0 1px 2px rgba(17,24,39,0.04),0 4px 16px rgba(17,24,39,0.06); }
+    /* Chat */
+    .supportExtChatWrap { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .supportExtMessages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .supportExtMsg { display:flex; align-items:flex-end; gap:8px; }
+    .supportExtMsg--user { flex-direction:row-reverse; }
+    .supportExtBotAvatar { width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg,#4f86f7,#7b5cf8); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .supportExtBubble { max-width:80%; padding:9px 12px; border-radius:14px; font-size:12px; line-height:1.5; }
+    .supportExtMsg--assistant .supportExtBubble { background:#fff; border:1px solid #e4e8ef; color:#111827; border-bottom-left-radius:4px; }
+    .supportExtMsg--user .supportExtBubble { background:#3b82f6; color:#fff; border-bottom-right-radius:4px; }
+    .supportExtBubble--typing { display:flex; gap:4px; align-items:center; padding:10px 14px; }
+    .supportExtBubble--typing span { width:6px; height:6px; border-radius:50%; background:#9ca3af; animation:extTyping 1.2s infinite; }
+    .supportExtBubble--typing span:nth-child(2) { animation-delay:.2s; }
+    .supportExtBubble--typing span:nth-child(3) { animation-delay:.4s; }
+    @keyframes extTyping { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+    /* Chat form */
+    .supportExtChatForm { flex-shrink:0; border-top:1px solid #e4e8ef; background:#fff; display:flex; flex-direction:column; }
+    .supportExtEscalate { padding:7px 12px 0; display:flex; align-items:center; gap:6px; font-size:11px; color:#9ca3af; }
+    .supportExtEscalateBtn { background:none; border:none; color:#3b82f6; font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+    .supportExtEscalateBtn:hover { text-decoration:underline; }
+    .supportExtInputRow { display:flex; gap:8px; padding:8px 10px; }
+    .supportExtInput { flex:1; padding:8px 12px; border:1.5px solid #e4e8ef; border-radius:10px; font-size:12px; font-family:inherit; color:#111827; background:#f8f9fc; outline:none; transition:border-color .15s; }
+    .supportExtInput:focus { border-color:#3b82f6; background:#fff; }
+    .supportExtSendBtn { width:34px; height:34px; border-radius:10px; border:none; background:#3b82f6; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:background .15s; }
+    .supportExtSendBtn:hover { background:#2563eb; }
+    .supportExtSendBtn:disabled { background:#bfdbfe; cursor:default; }
+    /* Tickets */
+    .supportExtTicketsWrap { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .supportTicketItem { display:flex; flex-direction:column; gap:5px; padding:11px 13px; border:1px solid #e4e8ef; border-radius:10px; background:#fff; cursor:pointer; transition:background .12s, border-color .12s; }
+    .supportTicketItem:hover { background:#f0f3f9; border-color:#bfdbfe; }
+    .supportTicketSubject { font-size:13px; font-weight:700; color:#111827; line-height:1.35; }
+    .supportTicketMeta { display:flex; align-items:center; gap:8px; }
+    .supportTicketDate { font-size:11px; color:#9ca3af; }
+    .ticketBadge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; }
+    .ticketBadge--open { background:#dbeafe; color:#1d4ed8; }
+    .ticketBadge--in_progress { background:#fef3c7; color:#92400e; }
+    .ticketBadge--closed { background:#d1fae5; color:#065f46; }
+    .supportEmptyState { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#9ca3af; font-size:13px; padding:40px 20px; gap:8px; }
+    /* Modal new ticket */
+    .supportExtModalOverlay { position:absolute; inset:0; background:rgba(15,23,42,0.35); z-index:9000; display:flex; align-items:flex-end; }
+    .supportExtModal { width:100%; background:#fff; border-radius:16px 16px 0 0; padding:18px 16px; display:flex; flex-direction:column; gap:12px; }
+    .supportExtModalHeader { display:flex; align-items:center; justify-content:space-between; }
+    .supportExtModalTitle { font-size:14px; font-weight:800; color:#111827; }
+    .supportExtModalClose { width:26px; height:26px; border-radius:6px; background:none; border:none; color:#6b7280; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .supportExtModalClose:hover { background:#f1f5f9; }
+    .supportFormGroup { display:flex; flex-direction:column; gap:4px; }
+    .supportFormLabel { font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
+    .supportFormInput { padding:8px 10px; border:1.5px solid #e4e8ef; border-radius:8px; font-size:13px; color:#111827; font-family:inherit; width:100%; box-sizing:border-box; outline:none; transition:border-color .15s; }
+    .supportFormInput:focus { border-color:#3b82f6; }
+    .supportFormTextarea { padding:8px 10px; border:1.5px solid #e4e8ef; border-radius:8px; font-size:13px; color:#111827; font-family:inherit; width:100%; box-sizing:border-box; resize:vertical; min-height:80px; outline:none; transition:border-color .15s; }
+    .supportFormTextarea:focus { border-color:#3b82f6; }
+    .supportFormActions { display:flex; gap:8px; justify-content:flex-end; }
+    .supportErrorMsg { font-size:12px; color:#ef4444; padding:6px 10px; background:#fef2f2; border-radius:6px; border:1px solid #fecaca; }
+    /* dark */
+    body.theme-dark .supportOverlay { background:#0d1626; }
+    body.theme-dark .supportOverlayHeader { background:#131f3a; border-bottom-color:#1e2f52; }
+    body.theme-dark .supportOverlayTitle { color:#e8effd; }
+    body.theme-dark .supportBackBtn { color:#a0b4d4; }
+    body.theme-dark .supportBackBtn:hover { background:#1a2a42; }
+    body.theme-dark .supportExtTabs { background:#192340; border-color:#1e2f52; }
+    body.theme-dark .supportExtTabBtn { color:#8a9dc0; }
+    body.theme-dark .supportExtTabBtn:hover { color:#e8effd; background:#1a2a42; }
+    body.theme-dark .supportExtTabBtn.active { color:#e8effd; background:#1a2a42; box-shadow:0 1px 2px rgba(0,0,0,0.2),0 4px 16px rgba(0,0,0,0.25); }
+    body.theme-dark .supportExtMsg--assistant .supportExtBubble { background:#131f3a; border-color:#1e2f52; color:#e8effd; }
+    body.theme-dark .supportExtChatForm { background:#131f3a; border-top-color:#1e2f52; }
+    body.theme-dark .supportExtInput { background:#0d1626; border-color:#1e2f52; color:#e8effd; }
+    body.theme-dark .supportExtInput:focus { border-color:#3b82f6; background:#0d1626; }
+    body.theme-dark .supportExtMessages { background:#0d1626; }
+    body.theme-dark .supportExtTicketsWrap { background:#0d1626; }
+    body.theme-dark .supportTicketItem { background:#131f3a; border-color:#1e2f52; }
+    body.theme-dark .supportTicketItem:hover { background:#192340; border-color:#3b82f6; }
+    body.theme-dark .supportTicketSubject { color:#e8effd; }
+    body.theme-dark .supportExtModal { background:#131f3a; }
+    body.theme-dark .supportExtModalTitle { color:#e8effd; }
+    body.theme-dark .supportFormInput { background:#0d1626; border-color:#1e2f52; color:#e8effd; }
+    body.theme-dark .supportFormTextarea { background:#0d1626; border-color:#1e2f52; color:#e8effd; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= LOGIN GATE ================= -->
+  <div id="loginGate" class="loginGate" style="display:none;">
+    <div class="loginGateBrand">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="10 4 84 84" width="52" height="52" aria-hidden="true">
+        <defs>
+          <linearGradient id="gate-lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#4F8EF7"/><stop offset="100%" stop-color="#18C9E8"/>
+          </linearGradient>
+          <linearGradient id="gate-lg2" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stop-color="#5B7BF8"/><stop offset="100%" stop-color="#18C9E8"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15.3 55.8 A 38 38 0 1 1 35.9 80.4" fill="none" stroke="url(#gate-lg)" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+        <path d="M 25.9 53.0 A 27 27 0 1 1 40.6 70.5" fill="none" stroke="url(#gate-lg)" stroke-width="7" stroke-linecap="round" opacity="0.82"/>
+        <path d="M 36.5 50.1 A 16 16 0 1 1 45.2 60.5" fill="none" stroke="url(#gate-lg)" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="52" cy="46" r="7" fill="rgba(79,142,247,0.30)"/>
+        <circle cx="52" cy="46" r="3.5" fill="#4F8EF7"/>
+        <g transform="translate(35,61) rotate(50)">
+          <path d="M 0 0 L -5 15 L 0 12 L 5 15 Z" fill="url(#gate-lg2)"/>
+        </g>
+      </svg>
+      <div class="loginGateName">seoprospector<span>.io</span></div>
+      <div class="loginGateTagline">LinkedIn SEO Prospecting</div>
+    </div>
+
+    <div class="loginGateBody">
+      <!-- Primary: auto-detect site session -->
+      <button id="btnDetectSession" class="loginGateBtn loginGateBtn--primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span id="btnDetectSessionLabel">Detect session</span>
+      </button>
+      <div id="loginGateDetectHint" class="loginGateHint">Opens your account if you're already logged in on the app.</div>
+
+      <div class="loginGateDivider"><span>or login manually</span></div>
+
+      <!-- Fallback: email + password -->
+      <div class="loginGateForm">
+        <input id="loginGateEmail" class="loginGateInput" type="email" placeholder="your@email.com" autocomplete="email" />
+        <input id="loginGatePassword" class="loginGateInput" type="password" placeholder="Password" autocomplete="current-password" />
+        <div id="loginGateError" class="loginGateError" style="display:none;"></div>
+        <button id="btnLoginGate" class="loginGateBtn loginGateBtn--secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span id="btnLoginGateLabel">Login</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="logo">
+        <svg class="logo__icon" xmlns="http://www.w3.org/2000/svg" viewBox="10 4 84 84" width="32" height="32" aria-hidden="true">
+          <defs>
+            <linearGradient id="ext-lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4F8EF7"/><stop offset="100%" stop-color="#18C9E8"/>
+            </linearGradient>
+            <linearGradient id="ext-lg2" x1="0.5" y1="0" x2="0.5" y2="1">
+              <stop offset="0%" stop-color="#5B7BF8"/><stop offset="100%" stop-color="#18C9E8"/>
+            </linearGradient>
+          </defs>
+          <path d="M 15.3 55.8 A 38 38 0 1 1 35.9 80.4" fill="none" stroke="url(#ext-lg)" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+          <path d="M 25.9 53.0 A 27 27 0 1 1 40.6 70.5" fill="none" stroke="url(#ext-lg)" stroke-width="7" stroke-linecap="round" opacity="0.82"/>
+          <path d="M 36.5 50.1 A 16 16 0 1 1 45.2 60.5" fill="none" stroke="url(#ext-lg)" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="52" cy="46" r="7" fill="rgba(79,142,247,0.30)"/>
+          <circle cx="52" cy="46" r="3.5" fill="#4F8EF7"/>
+          <g transform="translate(35,61) rotate(50)">
+            <path d="M 0 0 L -5 15 L 0 12 L 5 15 Z" fill="url(#ext-lg2)"/>
+          </g>
+        </svg>
+        <div class="logo__txt">
+          <strong>seoprospector</strong>
+          <span>LinkedIn</span>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="menu__item active" data-route="scan">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="6.5"></circle>
+              <circle cx="12" cy="12" r="2.5"></circle>
+              <path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2"></path>
+            </svg>
+            <span id="navScanText" class="menu__text">Scan</span>
+          </span>
+        </button>
+
+        <button class="menu__item" data-route="leads">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8.5 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"></path>
+              <path d="M15.5 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path>
+              <path d="M4.5 17c0-2.2 2.1-4 4.7-4s4.8 1.8 4.8 4"></path>
+              <path d="M13.2 17c.2-1.6 1.7-2.9 3.5-2.9 1 0 1.8.3 2.5.9"></path>
+            </svg>
+            <span id="navLeadsText" class="menu__text">Leads</span>
+          </span>
+          <span id="navBadgeLeads" class="navBadge" style="display:none;">0</span>
+        </button>
+
+        <button class="menu__item" data-route="seo">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 18.5h16"></path>
+              <path d="M7 16v-3.5M12 16V8.5M17 16v-5"></path>
+              <path d="M6 9.5l4-3 4 2 4-3"></path>
+            </svg>
+            <span id="navSeoText" class="menu__text">SEO</span>
+          </span>
+        </button>
+
+        <button class="menu__item" data-route="messages">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            <span id="navMessagesText" class="menu__text">Messages</span>
+          </span>
+          <span id="navBadgeMessages" class="navBadge" style="display:none;">0</span>
+        </button>
+
+        <button class="menu__item" id="navChatBtn" data-route="chat" style="display:none;">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <span id="navChatText" class="menu__text">Chat</span>
+          </span>
+          <span id="navBadgeChat" class="navBadge" style="display:none;">0</span>
+        </button>
+
+        <button class="menu__item" data-route="dashboard">
+          <span class="menu__label">
+            <svg class="menu__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4.5" y="4.5" width="6" height="6" rx="1"></rect>
+              <rect x="13.5" y="4.5" width="6" height="4" rx="1"></rect>
+              <rect x="13.5" y="11.5" width="6" height="8" rx="1"></rect>
+              <rect x="4.5" y="13.5" width="6" height="6" rx="1"></rect>
+            </svg>
+            <span id="navDashboardText" class="menu__text">Dashboard</span>
+          </span>
+        </button>
+
+      </nav>
+
+      <div id="sidebarUpsell" class="sidebarUpsell" style="display:none;">
+        <button id="sidebarUpsellDismiss" class="sidebarUpsell__dismiss" type="button" aria-label="Dismiss">&times;</button>
+        <div class="sidebarUpsell__msg" id="sidebarUpsellMsg"></div>
+        <div class="sidebarUpsell__plan" id="sidebarUpsellPlan"></div>
+        <button class="sidebarUpsell__btn" id="sidebarUpsellBtn">Manage Plan</button>
+      </div>
+
+      <div class="sidebar__stats">
+        <div class="sidebarSeatBlock">
+          <div class="stat stat--seatHeader">
+            <span id="lblPerSeat">Team</span>
+            <span id="sidebarSeatValue" class="badge info">1/1</span>
+          </div>
+          <div class="sidebarSeatActions">
+            <div id="sidebarMembersChip" class="sidebarMembersChip" tabindex="0">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              <span id="sidebarMembersChipLabel">Members</span>
+              <div id="sidebarMembersPopover" class="sidebarMembersPopover"></div>
+            </div>
+            <button id="btnSidebarAddUser" class="sidebarAddUserBtn" type="button">
+              <span class="sidebarAddUserPlus" aria-hidden="true">+</span>
+              <span id="lblAddUser">Add user</span>
+            </button>
+          </div>
+          <div id="sidebarSeatUsers" class="sidebarSeatUsers"></div>
+        </div>
+
+        <button id="sidebarAccountBtn" class="menu__item sidebarAccountItem" data-route="account">
+          <span class="menu__label">
+            <span id="sidebarAccountAvatar" class="sidebarAccountAvatar" aria-hidden="true">AC</span>
+            <span class="sidebarAccountMeta">
+              <span class="sidebarAccountNameRow">
+                <span id="navAccountText" class="sidebarAccountFirstName">Account</span>
+                <span id="sidebarRoleBadge" class="sidebarRoleBadge" style="display:none;"></span>
+              </span>
+              <span style="display:flex;gap:4px;align-items:center;">
+                <span id="sidebarAccountPlanHint" class="sidebarAccountPlanHint">FREE</span>
+                <span id="sidebarTrialBadge" class="badge warn badgeMini" style="display:none;">Trial</span>
+              </span>
+            </span>
+          </span>
+        </button>
+
+        <div class="sidebarBottomDivider" role="separator" aria-hidden="true"></div>
+        <!-- dark mode checkbox kept hidden for JS compatibility -->
+        <input id="themeToggle" type="checkbox" role="switch" aria-checked="false" style="display:none;" />
+        <div class="stat">
+          <span id="lblSidebarStatus">Status</span>
+          <span id="pipelineStatus" class="badge info">PAUSED</span>
+        </div>
+        <div class="stat">
+          <span id="lblSidebarToday">This month</span>
+          <span id="todayCount">0/40</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main">
+
+      <!-- ================= HEADER ================= -->
+      <header class="header">
+        <div class="header__breadcrumb">
+          <span class="header__brand">Home</span>
+          <span class="header__sep">›</span>
+          <h1 id="routeTitle">Scan</h1>
+        </div>
+        <div class="header__actions">
+          <div class="notifBellWrap" id="notifBellWrap">
+            <button id="btnNotifBell" class="notifBellBtn" title="Notifications">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6z"/>
+                <path d="M9 17v1a3 3 0 0 0 6 0v-1"/>
+              </svg>
+              <span id="navBadgeNotif" class="notifBellBadge" style="display:none;">0</span>
+            </button>
+            <div id="notifDropdown" class="notifDropdown" style="display:none;">
+              <div class="notifDropdownHeader">
+                <span class="notifDropdownTitle" id="notifDropdownTitle">Notifications</span>
+                <span id="notifUnreadBadge" class="notifUnreadBadge" style="display:none;">0</span>
+              </div>
+              <div id="notifExtList" class="notifDropdownList">
+                <div class="notifExtEmpty">
+                  <svg class="notifExtEmptyIcon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3H4a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6z"/><path d="M9 17v1a3 3 0 0 0 6 0v-1"/></svg>
+                  <div class="notifExtEmptyTitle">All caught up!</div>
+                  <div class="notifExtEmptySub">No notifications yet</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button id="btnSupport" class="supportBtn" title="Support">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+              <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+            </svg>
+          </button>
+          <button id="btnThemeToggle" class="notifBellBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <svg id="themeIconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg id="themeIconSun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+          <button id="btnPipelineToggle" class="btn primary">Pause</button>
+        </div>
+      </header>
+
+      <!-- ================= ROUTES ================= -->
+
+      <!-- ===== SCAN ===== -->
+      <section id="route-scan" class="route active">
+        <div class="cards">
+
+          <!-- ── Scan main card (full-width wrapper) ── -->
+          <div class="card full scan-main">
+
+            <!-- Tab bar -->
+            <div class="scan-tabs">
+              <button id="scanTabPipeline" class="scan-tab scan-tab--active" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="13" height="13" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span id="scanPipelineTitle">Pipeline</span>
+              </button>
+              <button id="scanTabHowItWorks" class="scan-tab" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span id="scanHowItWorksTitle">How it works</span>
+              </button>
+            </div>
+
+            <!-- Pipeline panel -->
+            <div id="scanPanelPipeline" class="scan-panel">
+              <div class="scan-kpi-row">
+                <div class="scan-kpi-card">
+                  <span id="scanPipelineStatusLabel" class="scan-kpi-label">Status</span>
+                  <span id="badgeCapture" class="badge info">PAUSED</span>
+                </div>
+                <div class="scan-kpi-card">
+                  <span id="scanDailyLimitText" class="scan-kpi-label">Monthly limit</span>
+                  <span id="dailyLimitLabel" class="scan-kpi-value">40</span>
+                </div>
+              </div>
+              <button id="btnExportActivity" class="btn btn-export-activity">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="margin-right:6px;flex-shrink:0;" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span id="btnExportActivityLabel">Download activity (CSV)</span>
+              </button>
+              <div id="scanActivitySection" class="scan-activity-section">
+                <div id="scanActivityHead" class="scan-activity-head">
+                  <span class="scan-activity-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span id="scanActivityTitle" class="scan-activity-title">Activity</span>
+                  </span>
+                  <span id="scanActivityHint" class="hint">Latest events</span>
+                </div>
+                <div id="activityLog" class="log"></div>
+              </div>
+            </div>
+
+            <!-- How it works panel -->
+            <div id="scanPanelHowItWorks" class="scan-panel" style="display:none;">
+              <button id="scanBestPracticesChip" class="scan-best-practices-chip" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                <span>Best Practices</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="margin-left:auto;" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div class="scan-how-list">
+                <details class="scan-how-item scan-how-accordion">
+                  <summary class="scan-how-summary">
+                    <div class="scan-how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                    <span class="scan-how-title" id="scanHowItWorksP1">Browse LinkedIn profiles manually</span>
+                    <svg class="scan-how-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+                  </summary>
+                  <div class="scan-how-desc">Navigate normally — the extension captures profiles in the background as you scroll.</div>
+                </details>
+                <details class="scan-how-item scan-how-accordion">
+                  <summary class="scan-how-summary">
+                    <div class="scan-how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+                    <span class="scan-how-title" id="scanHowItWorksP2">Automatic scoring &amp; SEO audit</span>
+                    <svg class="scan-how-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+                  </summary>
+                  <div class="scan-how-desc">SEO health score 0–100 — lower score = more issues = bigger opportunity.
+                    <span style="display:grid;gap:4px;margin-top:8px;">
+                      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:5px;vertical-align:middle;"></span><strong style="color:#ef4444">0–39</strong> · Critical → <strong>HOT</strong></span>
+                      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:5px;vertical-align:middle;"></span><strong style="color:#f59e0b">40–64</strong> · Weak SEO → <strong>WARM</strong></span>
+                      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:5px;vertical-align:middle;"></span><strong style="color:#10b981">65–100</strong> · Good SEO → <strong>COLD</strong></span>
+                    </span>
+                    <span class="scanHowOverride">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      <strong>noindex</strong> or blocked <strong>robots.txt</strong> → always CRITICAL, regardless of score.
+                    </span>
+                  </div>
+                </details>
+                <details class="scan-how-item scan-how-accordion">
+                  <summary class="scan-how-summary">
+                    <div class="scan-how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+                    <span class="scan-how-title">Outreach via AI messages</span>
+                    <svg class="scan-how-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+                  </summary>
+                  <div class="scan-how-desc">Generate personalised LinkedIn messages using the SEO audit as context.</div>
+                </details>
+                <details class="scan-how-item scan-how-accordion">
+                  <summary class="scan-how-summary">
+                    <div class="scan-how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                    <span class="scan-how-title">Monthly scan limit</span>
+                    <svg class="scan-how-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+                  </summary>
+                  <div class="scan-how-desc">Your plan includes a monthly scan quota. Pausing stops captures without losing your leads.</div>
+                </details>
+              </div>
+            </div>
+
+          </div>
+
+
+          <div id="assistantCard" class="card full card-assistant" aria-hidden="true">
+            <div class="card__head assistantCardHead">
+              <div style="display:flex;flex-direction:column;gap:0px;">
+                <h3 style="margin:0;display:flex;align-items:center;gap:7px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#3a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  <span>LinkedIn Query Builder</span>
+                  <span id="assistantProBadge" class="proLockBadge" style="display:none;">PRO</span>
+                </h3>
+                <div id="assistantSubtitle" class="muted" style="font-size:11px;margin-left:22px;">Build your LinkedIn query</div>
+              </div>
+              <div class="row" style="gap:8px;">
+                <button id="scanAssistOpenPeople" class="btn btn-linkedin-assist"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="flex-shrink:0;vertical-align:-1px;margin-right:5px;" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg><span id="scanAssistOpenPeopleLabel">LinkedIn</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:-1px;margin-left:4px;opacity:0.8;" aria-hidden="true"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></button>
+                <button id="scanAssistClose" class="assistantClose" type="button" aria-label="Close assistant">&times;</button>
+              </div>
+            </div>
+
+            <div id="assistantCardBody" class="assistantCardBody">
+              <label class="assistantField">
+                <span id="assistantPromptLabel" class="assistantFieldLabel">Describe your ideal prospect</span>
+                <textarea id="scanAssistPrompt" class="assistantTextarea assistantPromptInput" rows="3" placeholder="Ex: CEO or founder of a SMB in France, B2B sector, with a website not optimized for SEO..."></textarea>
+              </label>
+
+              <div class="assistantOutputWrap">
+                <label class="assistantField">
+                  <span id="assistantPeopleQueryLabel" class="assistantFieldLabel">People query</span>
+                  <textarea id="scanAssistPeopleQuery" class="assistantTextarea" readonly placeholder="Generated people query"></textarea>
+                </label>
+                <div class="row assistantActionRow">
+                  <button id="scanAssistCopyPeople" class="btn btn-copy-assist"><svg class="iconCopyAssist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="margin-right:5px;vertical-align:-1px;flex-shrink:0;" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="iconCopiedAssist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="margin-right:5px;vertical-align:-1px;flex-shrink:0;display:none;" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span id="scanAssistCopyPeopleLabel">Copy</span></button>
+                  <div id="scanAssistGenerateWrap" class="btn-regen-wrap">
+                    <button id="scanAssistGenerate" class="btn btn-regen-ai">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" style="margin-right:5px;vertical-align:-1px;flex-shrink:0;" aria-hidden="true"><path fill-rule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zm9-3a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zm-3.5 13.5a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0114.5 15z" clip-rule="evenodd"/></svg>
+                      <span id="scanAssistGenerateLabel">Generate with AI</span>
+                    </button>
+                    <span class="ai-spark ai-spark--1" aria-hidden="true">✦</span>
+                    <span class="ai-spark ai-spark--2" aria-hidden="true">✦</span>
+                    <span class="ai-spark ai-spark--3" aria-hidden="true">✦</span>
+                    <span class="ai-spark ai-spark--4" aria-hidden="true">✦</span>
+                    <span class="ai-spark ai-spark--5" aria-hidden="true">✦</span>
+                  </div>
+                </div>
+              </div>
+
+              <textarea id="scanAssistCompanyQuery" class="assistantTextarea assistantHidden" readonly></textarea>
+
+              <div id="assistantLockHint" class="lockedHint" style="display:none;"></div>
+            </div>
+          </div>
+
+
+        </div>
+
+        <button id="scanAssistFab" class="assistantFab" type="button" aria-label="Toggle Assistant Scan v1">
+          <span class="assistantFabText">Query Builder</span>
+          <span class="assistantFabDot">
+            <span class="assistantFabDotIcon" aria-hidden="true">
+              <svg class="assistantFabScanSvg" viewBox="0 0 24 24" fill="none" role="img" aria-hidden="true">
+                <circle cx="12" cy="12" r="7.5" stroke="currentColor" stroke-width="1.7"></circle>
+                <circle cx="12" cy="12" r="2.4" fill="currentColor"></circle>
+                <path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+              </svg>
+            </span>
+            <span class="assistantFabStar assistantFabStar--a">*</span>
+            <span class="assistantFabStar assistantFabStar--b">*</span>
+          </span>
+        </button>
+      </section>
+
+      <!-- ===== LEADS ===== -->
+      <section id="route-leads" class="route route-leads">
+        <div id="leadsStatBar" class="leadsStatBar"></div>
+        <div class="cards">
+
+          <div class="card full leadListMainCard">
+            <div class="card__head leadListHead">
+              <div class="leadListHeadTop">
+                <svg class="menu__icon leadListIcon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8.5 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
+                  <path d="M15.5 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                  <path d="M4.5 17c0-2.2 2.1-4 4.7-4s4.8 1.8 4.8 4"/>
+                  <path d="M13.2 17c.2-1.6 1.7-2.9 3.5-2.9 1 0 1.8.3 2.5.9"/>
+                </svg>
+                <div style="flex:1;min-width:0;">
+                  <div id="leadListTitle" class="leadListTitle">Lead list</div>
+                  <div id="leadListHint" class="muted leadListHint">Pick a lead to open Messages or SEO.</div>
+                </div>
+                <button id="btnViewLeadsOnSite" class="btn ghost btnViewOnSite" type="button">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span id="btnViewLeadsOnSiteLabel">View on site</span>
+                </button>
+              </div>
+              <div class="leadListHeadBottom">
+                <div class="leadsSearchWrap">
+                  <svg class="leadsSearchIcon" viewBox="0 0 24 24" fill="none" width="13" height="13" aria-hidden="true" focusable="false">
+                    <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2.2"/>
+                    <path d="M16.5 16.5L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                  </svg>
+                  <input id="leadsSearchInput" class="leadSearchInput" type="text" autocomplete="off" placeholder="Search…">
+                  <button id="btnLeadsSearchClear" class="leadSearchClear" type="button" aria-label="Clear" title="Clear">&times;</button>
+                </div>
+                <div id="leadsHeaderTools" style="display:flex;align-items:center;gap:4px;">
+                  <div id="leadsClassicControls"></div>
+                  <button id="btnExportLeads" class="btn btnIconOnly" title="Export leads (CSV)" aria-label="Export leads (CSV)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div id="leadsExportHint" class="featureHint" style="display:none;"></div>
+            </div>
+
+            <div id="leadList" class="leadList">
+              <!-- Lead cards injected here -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== SEO ===== -->
+      <section id="route-seo" class="route">
+        <div class="cards">
+
+          <div id="seoStatBar" class="seoStatBar"></div>
+
+          <div class="card full seoListCard">
+            <div class="card__head seoListHead">
+              <div class="seoListHeadTop">
+                <svg class="menu__icon seoListIcon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 18.5h16"/>
+                  <path d="M7 16v-3.5M12 16V8.5M17 16v-5"/>
+                  <path d="M6 9.5l4-3 4 2 4-3"/>
+                </svg>
+                <div>
+                  <div id="seoAuditsTitle" class="seoListTitle">SEO audits</div>
+                  <div id="seoAuditsHint" class="seoListHint">Audits from captured profiles</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="seoList" class="leadList">
+              <!-- SEO cards injected here -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== MESSAGES ===== -->
+      <section id="route-messages" class="route">
+        <div class="cards">
+          <div class="card full msgCard">
+
+            <!-- ── Lead Picker ── -->
+            <div class="msgLeadPicker" id="msgLeadPicker">
+              <div class="msgPickerTrigger" id="msgPickerTrigger">
+                <div class="msgPickerAvatar" id="msgPickerAvatar">?</div>
+                <div class="msgPickerInfo">
+                  <div class="msgPickerName" id="msgPickerName">—</div>
+                  <div class="msgPickerSub" id="msgPickerSub">No lead selected</div>
+                </div>
+                <span id="msgLeadType" class="badge" style="display:none"></span>
+                <span id="msgAction" class="badge" style="display:none"></span>
+                <span id="msgProfile" style="display:none"></span>
+                <button id="btnCopyMsgProfile" class="seo-copy-btn msgPickerCopyBtn" title="Copy profile URL" aria-label="Copy profile URL">
+                  <svg id="iconCopyMsgProfile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <svg id="iconCheckMsgProfile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="display:none;" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
+                <svg class="msgPickerChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <div class="msgPickerDropdown" id="msgPickerDropdown"></div>
+            </div>
+
+            <!-- Opportunity selector -->
+            <div class="msgOppRow" id="msgOppRow" style="display:none">
+              <span class="msgOppLabel" id="msgOppLabel">Opportunity</span>
+              <select id="msgOpportunitySelect" class="routeSelect"></select>
+            </div>
+
+            <!-- ── Compose area ── -->
+            <div class="msgComposeArea">
+
+              <div class="msgComposeHead">
+                <div class="msgToneWrap">
+                  <label id="msgToneLabel" class="msgContextLabel">Tone</label>
+                  <div id="msgTonePills" class="msgTonePills">
+                    <button class="msgTonePill active" data-tone="professional" id="tonePillProfessional">Professional</button>
+                    <button class="msgTonePill" data-tone="friendly" id="tonePillFriendly">Friendly</button>
+                    <button class="msgTonePill" data-tone="direct" id="tonePillDirect">Direct</button>
+                    <button class="msgTonePill" data-tone="consultative" id="tonePillConsultative">Consultative</button>
+                  </div>
+                </div>
+                <span id="messagesEditHint" class="hint">Edit before sending</span>
+              </div>
+
+              <div class="msgContextWrap">
+                <label id="msgContextLabel" class="msgContextLabel">Context <span id="msgContextOptional" class="msgContextOptional">(optional)</span></label>
+                <textarea id="msgContextInput" class="textarea msgContextArea" rows="2" placeholder="e.g. focus on SEO issues, keep it under 300 chars…"></textarea>
+              </div>
+
+              <textarea id="messageBox" class="textarea msgTextarea" placeholder="Message will appear here&hellip;"></textarea>
+
+
+              <div class="row msg-btn-row">
+                <button id="btnCopyMsg" class="btn btn-copy-assist">
+                  <svg id="iconCopy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="margin-right:5px;vertical-align:-1px;" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <svg id="iconCopied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="margin-right:5px;vertical-align:-1px;display:none;" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span id="btnCopyMsgLabel">Copy</span>
+                </button>
+                <div id="btnRegenWrap" class="btn-regen-wrap">
+                  <button id="btnRegenMsg" class="btn btn-regen-ai">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" style="margin-right:5px;vertical-align:-1px;flex-shrink:0;" aria-hidden="true"><path fill-rule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zm9-3a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zm-3.5 13.5a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0114.5 15z" clip-rule="evenodd"/></svg>
+                    <span id="btnRegenMsgLabel">Generate with AI</span>
+                  </button>
+                  <span class="ai-spark ai-spark--1" aria-hidden="true">✦</span>
+                  <span class="ai-spark ai-spark--2" aria-hidden="true">✦</span>
+                  <span class="ai-spark ai-spark--3" aria-hidden="true">✦</span>
+                  <span class="ai-spark ai-spark--4" aria-hidden="true">✦</span>
+                  <span class="ai-spark ai-spark--5" aria-hidden="true">✦</span>
+                </div>
+                <button id="btnSendMsg" class="btn primary btn-send-msg" title="Send to selected LinkedIn lead">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" style="margin-right:5px;vertical-align:-2px;" aria-hidden="true"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>
+                  <span id="btnSendMsgLabel">Send</span>
+                </button>
+              </div>
+
+              <div id="msgSendHint" class="muted" style="font-size:11.5px;margin-top:6px;"></div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="route-dashboard" class="route">
+        <div class="cards">
+
+          <!-- ── Summary card ── -->
+          <div class="card full dashSummaryCard" id="dashSummaryCard">
+            <div class="dashSummaryStats">
+              <div class="dashStat">
+                <span class="dashStatNum" id="statCaptured">0</span>
+                <span class="dashStatLabel" id="dashCapturedTitle">Leads</span>
+              </div>
+              <div class="dashStatDivider"></div>
+              <div class="dashStat">
+                <span class="dashStatNum dashStatNum--blue" id="statDeciders">0</span>
+                <span class="dashStatLabel"><span id="dashDecidersTitle">Deciders</span><span id="dashboardDecidersProBadge" class="proLockBadge" style="display:none;">STARTER</span></span>
+              </div>
+              <div class="dashStatDivider"></div>
+              <div class="dashStat">
+                <span class="dashStatNum dashStatNum--green" id="statConversion">0%</span>
+                <span class="dashStatLabel"><span id="dashConversionTitle">HOT rate</span><span id="dashboardConvProBadge" class="proLockBadge" style="display:none;">STARTER</span></span>
+              </div>
+            </div>
+            <div class="dashSummaryProgress">
+              <div class="dashProgressMeta">
+                <span class="dashProgressLabel" id="dashTodayTitle">Month scans</span>
+                <span class="dashProgressVal" id="dashTodayText">0 / 0</span>
+              </div>
+              <div class="metricBar dashProgressBar"><span id="dashTodayBar"></span></div>
+            </div>
+          </div>
+
+          <!-- ── Quota usage ── -->
+          <div class="card full dashQCard">
+            <div class="dashQHeader">
+              <span class="dashQTitle">
+                <span class="dashQIcon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><circle cx="18" cy="6" r="4" fill="currentColor" stroke="none" opacity="0.3"/><path d="M18 4v4l2 2" stroke="currentColor"/>
+                  </svg>
+                </span>
+                Quota Usage
+              </span>
+              <span id="dashQPlanBadge" class="badge info" style="font-size:10px;">FREE</span>
+            </div>
+            <div class="dashQBody">
+              <div id="dashQItems"></div>
+              <div class="dashQFeatures">
+                <p class="dashQFeatTitle">Features</p>
+                <div class="dashQFeatGrid" id="dashQFeatGrid"></div>
+              </div>
+              <div class="dashQReset">
+                <span class="dashQResetLabel">Next reset</span>
+                <span id="dashQResetDate" class="dashQResetVal">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Open App ── -->
+          <div class="card full dashHub">
+            <p class="dashHubLabel" id="dashOpenAppTitle">Open app</p>
+            <div class="dashHubGrid">
+              <button class="dashHubBtn dashHubBtn--primary" id="btnOpenAppDashboard">
+                <span class="dashHubBtnIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                <span class="dashHubBtnLabel" id="dashOpenAppDashboardLabel">Dashboard</span>
+              </button>
+              <button class="dashHubBtn dashHubBtn--leads" id="btnOpenAppLeads">
+                <span class="dashHubBtnIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+                <span class="dashHubBtnLabel" id="dashOpenAppLeadsLabel">Leads</span>
+              </button>
+              <button class="dashHubBtn dashHubBtn--team" id="btnOpenAppTeam" style="display:none;">
+                <span class="dashHubBtnIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M1 20c0-3.3 3.1-6 8-6"/><path d="M23 20c0-3.3-3.1-6-8-6"/></svg></span>
+                <span class="dashHubBtnLabel" id="dashOpenAppTeamLabel">Team</span>
+              </button>
+              <button class="dashHubBtn dashHubBtn--upgrade" id="btnOpenAppUpgrade" style="display:none;">
+                <span class="dashHubBtnIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                <span class="dashHubBtnLabel" id="dashOpenAppUpgradeLabel">Upgrade</span>
+              </button>
+              <button class="dashHubBtn dashHubBtn--billing" id="btnOpenAppBilling" style="display:none;">
+                <span class="dashHubBtnIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+                <span class="dashHubBtnLabel" id="dashOpenAppBillingLabel">Billing</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== CHAT ===== -->
+      <section id="route-chat" class="route">
+        <div class="chatExtShell">
+
+          <div class="chatExtHeader">
+            <span class="chatExtChannel">
+              <span class="chatExtHash">#</span>
+              <span id="chatExtChannelName">general</span>
+            </span>
+            <button id="btnChatOpenFull" class="chatExtOpenBtn">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open full chat
+            </button>
+          </div>
+
+          <div id="chatExtMessages" class="chatExtMessages">
+            <div class="chatExtEmpty">Loading…</div>
+          </div>
+
+          <div class="chatExtInputRow">
+            <textarea id="chatExtInput" class="chatExtInput" placeholder="Message #general…" rows="1"></textarea>
+            <button id="chatExtSend" class="chatExtSendBtn" disabled>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== ACCOUNT ===== -->
+      <section id="route-account" class="route">
+
+        <!-- Tab bar -->
+        <div class="acctExtTabs">
+          <button class="acctExtTab active" data-acct-tab="profile">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </button>
+          <button class="acctExtTab" data-acct-tab="security">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Security
+          </button>
+          <button class="acctExtTab" data-acct-tab="appearance">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            Appearance
+          </button>
+        </div>
+
+        <!-- ── TAB: PROFILE ── -->
+        <div class="acctExtPanel active" id="acctPanelProfile">
+          <div class="acctExtCards">
+
+            <!-- Profile card -->
+            <div class="card accountInfoCard" style="position:relative;">
+              <div style="position:absolute;top:12px;right:14px;display:flex;gap:4px;align-items:center;">
+                <span id="accountPlan" class="badge info accountPlanBadge">FREE</span>
+                <span id="accountTrialBadge" class="badge warn" style="display:none;">Trial</span>
+              </div>
+              <div class="acctExtProfileHead">
+                <div class="acctExtAvatar" id="acctExtAvatar">?</div>
+                <div style="min-width:0;">
+                  <div class="acctExtName" id="acctExtName">—</div>
+                  <div class="acctExtEmail" id="acctExtEmail">—</div>
+                </div>
+              </div>
+              <div class="kv"><span id="accountBillingLabel">Billing status</span><span id="accountBillingStatus">—</span></div>
+              <div class="kv"><span id="accountLinkedinLabel">LinkedIn</span><span id="accountLinkedin">—</span></div>
+              <div class="kv"><span id="accountAuthMethodLabel">Auth method</span><span id="accountAuthMethod">Guest</span></div>
+              <div class="kv"><span id="accountTokenLabel">Token</span><span id="accountTokenPreview">—</span></div>
+              <div class="kv"><span id="accountIdentityLabel">Identity</span><span id="accountIdentity">—</span></div>
+            </div>
+
+            <!-- Personal information -->
+            <div class="card">
+              <div class="acctExtCardHeader">
+                <div class="acctExtCardIcon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                <span class="acctExtCardTitle" id="accountPersonalTitle">Personal Information</span>
+              </div>
+              <div class="row" style="gap:8px;margin-bottom:8px;">
+                <input id="accountLoginFirstName" class="routeSelect" type="text" placeholder="First name" style="max-width:none;opacity:0.7;cursor:default;" readonly />
+                <input id="accountLoginLastName" class="routeSelect" type="text" placeholder="Last name" style="max-width:none;opacity:0.7;cursor:default;" readonly />
+              </div>
+              <div class="row" style="gap:8px;">
+                <input id="accountLoginEmail" class="routeSelect" type="email" placeholder="you@example.com" style="max-width:none;opacity:0.7;cursor:default;" readonly />
+              </div>
+            </div>
+
+            <!-- Sign out -->
+            <div class="extDangerZoneRow">
+              <div class="extDangerZoneLeft">
+                <div class="extDangerZoneIcon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </div>
+                <div>
+                  <div class="extDangerZoneTitle" id="extSignOutTitle">Sign out</div>
+                  <div class="extDangerZoneSub" id="extSignOutSub">You will be redirected to the login page.</div>
+                </div>
+              </div>
+              <button id="btnAuthLogout" class="btn extBtnDanger" id="extSignOutSub">Logout</button>
+            </div>
+
+            <!-- Quota IDs kept hidden here for JS compatibility -->
+            <span id="accountQuotaTitle" style="display:none;"></span>
+            <span id="accountScansPerDayLabel" style="display:none;"></span>
+            <span id="accountScansTeamBadge" style="display:none;"></span>
+            <strong id="accountQuotaScanText" style="display:none;"></strong>
+            <span id="accountQuotaScanBar" style="display:none;"></span>
+            <span id="accountMessagesPerMonthLabel" style="display:none;"></span>
+            <strong id="accountQuotaMsgText" style="display:none;"></strong>
+            <span id="accountQuotaMsgBar" style="display:none;"></span>
+            <div id="accountSeoExportsRow" style="display:none;">
+              <span id="accountSeoExportsPerMonthLabel"></span>
+              <strong id="accountQuotaSeoText"></strong>
+              <span id="accountQuotaSeoBar"></span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── TAB: SECURITY ── -->
+        <div class="acctExtPanel" id="acctPanelSecurity">
+          <div class="acctExtCards">
+            <div class="card accountActionsCard">
+              <div class="acctExtCardHeader acctExtCardHeader--indigo">
+                <div class="acctExtCardIcon acctExtCardIcon--indigo">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="acctExtCardTitle" id="accountAuthActionsTitle">Session &amp; Security</span>
+              </div>
+
+              <!-- hidden inputs kept for JS compatibility -->
+              <input id="accountLoginEmailSecurity" type="hidden" />
+              <input id="accountLoginPassword" type="hidden" />
+              <button id="btnAuthRegister" style="display:none;"></button>
+              <button id="btnAuthLogin" style="display:none;"></button>
+
+              <div class="secActionRow">
+                <div class="secActionRowInfo">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="secActionRowIcon"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  <div>
+                    <div class="secActionRowLabel" id="secSyncLabel">Sync account</div>
+                    <div class="secActionRowHint" id="accountSyncHint">Refresh entitlements from server</div>
+                  </div>
+                </div>
+                <button id="btnAuthSync" class="secActionBtn">Sync</button>
+              </div>
+
+              <div class="secActionRow">
+                <div class="secActionRowInfo">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="secActionRowIcon"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <div>
+                    <div class="secActionRowLabel" id="secPasswordLabel">Change password</div>
+                    <div class="secActionRowHint" id="secPasswordHint">Managed on the web app</div>
+                  </div>
+                </div>
+                <button id="btnChangePasswordSite" class="secActionBtn">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  Open
+                </button>
+              </div>
+
+              <div id="adminResetDataWrap" style="display:none;margin-top:4px;">
+                <button id="btnAdminResetData" class="btn ghost" style="font-size:11px;">Reset account data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── TAB: APPEARANCE ── -->
+        <div class="acctExtPanel" id="acctPanelAppearance">
+          <div class="acctExtCards">
+            <div class="card">
+              <div class="acctExtCardHeader acctExtCardHeader--purple">
+                <div class="acctExtCardIcon acctExtCardIcon--purple">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                </div>
+                <span class="acctExtCardTitle">Appearance</span>
+              </div>
+              <div class="acctAppRow">
+                <div class="acctAppRowInfo">
+                  <span class="acctAppRowLabel" id="lblLanguage">Language</span>
+                </div>
+                <div class="langSwitchGroup" aria-label="Switch language">
+                  <span class="langSwitchLabel langSwitchLabel--en">EN</span>
+                  <label class="acctToggle" for="langToggle" aria-label="Toggle language">
+                    <input id="langToggle" type="checkbox" role="switch" aria-checked="false" />
+                    <span class="acctToggleTrack"></span>
+                  </label>
+                  <span class="langSwitchLabel langSwitchLabel--fr">FR</span>
+                </div>
+              </div>
+              <div class="acctAppRow">
+                <div class="acctAppRowInfo">
+                  <span class="acctAppRowLabel" id="lblTheme">Theme</span>
+                  <span class="acctAppRowSub">Dark mode</span>
+                </div>
+                <label class="acctToggle" for="themeToggleAppearance" aria-label="Toggle dark mode">
+                  <input id="themeToggleAppearance" type="checkbox" role="switch" aria-checked="false" />
+                  <span class="acctToggleTrack"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= TEAM OVERLAY ================= -->
+      <div id="teamOverlay" class="teamOverlay">
+        <div class="teamOverlayHeader">
+          <button id="btnTeamBack" class="supportBackBtn" type="button" title="Back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="teamOverlayTitle">Team</span>
+          <span id="teamStatsMeta" class="teamStatsMeta"></span>
+        </div>
+        <div id="teamMembersList" class="teamMembersList">
+          <div class="teamStatsLoading" id="teamStatsLoading">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ================= SUPPORT OVERLAY ================= -->
+      <div id="supportOverlay" class="supportOverlay">
+        <!-- Header -->
+        <div class="supportOverlayHeader">
+          <button id="btnSupportBack" class="supportBackBtn" title="Back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="supportOverlayTitle">Support</span>
+          <button id="btnSupportNewTicket" class="supportNewTicketBtn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New ticket
+          </button>
+        </div>
+        <!-- Tabs -->
+        <div class="supportExtTabs">
+          <button class="supportExtTabBtn active" data-tab="chat">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Ask AI
+          </button>
+          <button class="supportExtTabBtn" data-tab="tickets">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            My tickets
+          </button>
+        </div>
+        <!-- Chat tab -->
+        <div id="supportTabChat" class="supportExtChatWrap">
+          <div id="supportExtMessages" class="supportExtMessages"></div>
+          <div class="supportExtChatForm">
+            <div class="supportExtEscalate">
+              <span>Need human support?</span>
+              <button class="supportExtEscalateBtn" id="btnSupportEscalate">Create a ticket</button>
+            </div>
+            <div class="supportExtInputRow">
+              <input id="supportExtInput" class="supportExtInput" placeholder="Ask a question…" />
+              <button id="btnSupportSend" class="supportExtSendBtn" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Tickets tab -->
+        <div id="supportTabTickets" class="supportExtTicketsWrap" style="display:none">
+          <div class="supportEmptyState">Loading…</div>
+        </div>
+        <!-- New ticket modal -->
+        <div id="supportExtModalOverlay" class="supportExtModalOverlay" style="display:none">
+          <div class="supportExtModal">
+            <div class="supportExtModalHeader">
+              <span class="supportExtModalTitle">Create a ticket</span>
+              <button id="btnSupportModalClose" class="supportExtModalClose">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="supportFormGroup">
+              <label class="supportFormLabel">Subject</label>
+              <input id="supportSubjectInput" class="supportFormInput" placeholder="Briefly describe your issue…" maxlength="120" />
+            </div>
+            <div class="supportFormGroup">
+              <label class="supportFormLabel">Message</label>
+              <textarea id="supportMessageInput" class="supportFormTextarea" placeholder="Provide as much detail as possible…"></textarea>
+            </div>
+            <div id="supportFormError" class="supportErrorMsg" style="display:none;"></div>
+            <div class="supportFormActions">
+              <button id="btnSupportCancelForm" class="btn ghost" style="font-size:12px;">Cancel</button>
+              <button id="btnSupportSubmit" class="btn primary" style="font-size:12px;">Send ticket</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ===== DETAIL DRAWER ===== -->
+      <div id="drawerBackdrop" class="drawerBackdrop"></div>
+      <div id="leadDetailDrawer" class="leadDetailDrawer"></div>
+
+    </main>
+  </div>
+
+  <!-- ================= LEAD CHOOSER (PATCHED) ================= -->
+  <!-- Exists in DOM so panel.js NEVER creates it dynamically -->
+  <div id="leadChooser" style="display:none;">
+    <div id="leadChooserName"></div>
+    <div class="row" style="gap:8px;">
+      <button id="btnOpenMessages" class="btn primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span id="btnOpenMessagesLabel">Messages</span>
+      </button>
+      <button id="btnOpenSEO" class="btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18.5h16"/><path d="M7 16v-3.5M12 16V8.5M17 16v-5"/><path d="M6 9.5l4-3 4 2 4-3"/></svg>
+        <span id="btnOpenSEOLabel">SEO</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="toastHost" class="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="panel.js"></script>
+</body>
+</html>
+
+
+
+
