@@ -1,0 +1,556 @@
+{
+  "name": "scan_ingest_score_v6.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/seo-prospector/scan",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2192,
+        176
+      ],
+      "id": "b17dff73-3d30-438b-866d-8f291c021191",
+      "name": "Webhook",
+      "webhookId": "08d06a2b-f51e-42e1-a55f-09d333408cf8"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.websiteNormalized}}/robots.txt",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1168,
+        -16
+      ],
+      "id": "eab28c0d-e98d-4af1-8ea9-90de3af52dae",
+      "name": "HTTP robot",
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.websiteNormalized}}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64)\",\n  \"Accept\": \"text/html,application/xhtml+xml\",\n  \"Accept-Language\": \"fr-FR,fr;q=0.9,en;q=0.8\"\n}\n",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 10
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1520,
+        -160
+      ],
+      "id": "d8b10bda-3d4d-462e-a543-2758840e37f2",
+      "name": "HTTP Homepage",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.websiteNormalized}}/sitemap.xml",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1168,
+        176
+      ],
+      "id": "435f13a3-6a9a-448f-b575-ca10938a3525",
+      "name": "HTTP sitemap.xml",
+      "alwaysOutputData": true,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        464,
+        208
+      ],
+      "id": "f17280da-0bc7-434f-9658-848bb72896ce",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const DECISION_MAKER_PATTERNS = [\n  /\\bceo\\b/i,\n  /\\bfounder\\b/i,\n  /\\bco[-\\s]?founder\\b/i,\n  /\\bowner\\b/i,\n  /\\bdir(e|é)cteur(\\s+g[eé]n[eé]ral)?\\b/i,\n  /\\bmanaging director\\b/i,\n  /\\bchief executive\\b/i,\n  /\\bprésident\\b/i,\n  /\\bgérant\\b/i,\n  /\\bdirigean?t\\b/i,\n  /\\bdg\\b/i,\n  /\\bpdg\\b/i,\n  /\\bassocié\\b/i,\n  /\\bpartner\\b/i,\n  /\\bhead of\\b/i,\n  /\\bvp\\b/i,\n  /\\bvice.?president\\b/i,\n  /\\bcto\\b/i,\n  /\\bcoo\\b/i,\n  /\\bcmo\\b/i\n];\n\nconst MARKETING_PATTERNS = [\n  /\\bmarketing\\b/i,\n  /\\bgrowth\\b/i,\n  /\\bseo\\b/i,\n  /\\btraffic\\b/i,\n  /\\bcontent\\b/i,\n  /\\bbrand\\b/i\n];\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const headlineRaw = String(\n    j.primaryTitle ||\n    j.body?.headline ||\n    \"\"\n  );\n\n  const headline = headlineRaw\n    .toLowerCase()\n    .replace(/[@|•\\-–—]/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  let role = \"UNKNOWN\";\n  if (DECISION_MAKER_PATTERNS.some((r) => r.test(headline))) role = \"DECISION_MAKER\";\n  else if (MARKETING_PATTERNS.some((r) => r.test(headline))) role = \"MARKETING\";\n\n  out.push({\n    json: {\n      ...j,\n      businessSignals: {\n        role,\n        detectedHeadline: headlineRaw,\n        detectedAt: new Date().toISOString(),\n        websiteStatus: j.websiteStatus || \"UNKNOWN\",\n        websiteValid: j.websiteValid !== false,\n        websiteNormalized: j.websiteNormalized || null\n      }\n    }\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        384
+      ],
+      "id": "772094c6-f3d5-45f4-a728-c50555b2b147",
+      "name": "Business Signals VF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\n\nfor (const item of $input.all()) {\n  const input      = item.json || {};\n  const homepage   = input.seoHomepage    || {};\n  const robotsRaw  = input.robots         || {};\n  const sitemapRaw = input.sitemap        || {};\n  const techFP     = input.techFingerprint || {};\n\n  // ── FIX: HTTPS detection is done HERE (post-Merge)\n  // because websiteNormalized is available after Merge but NOT in SEO Source Detector\n  // (HTTP Request node replaces the input item with the response)\n  const websiteNorm = String(input.websiteNormalized || \"\");\n  const websiteRaw  = String(input.websiteRaw || \"\");\n\n  // True HTTPS = normalized URL starts with https AND the raw original also was https\n  // If raw was http:// → the normalizer forced https, but the server MAY still be HTTP\n  // We use the security header (HSTS) as a confirmation signal\n  const security = homepage.security || {};\n  const normalizedIsHttps = websiteNorm.startsWith(\"https://\");\n  const rawWasHttp        = websiteRaw.startsWith(\"http://\") && !websiteRaw.startsWith(\"https://\");\n  const serverConfirmsHttps = security.hasHSTS; // HSTS header = definitely HTTPS server\n\n  // isHttps logic:\n  // - If normalizedURL is https AND raw was already https → TRUE (original https)\n  // - If normalizedURL is https AND raw was http → check HSTS to confirm server serves HTTPS\n  // - If no https at all → FALSE\n  let isHttps = false;\n  if (normalizedIsHttps && !rawWasHttp) {\n    isHttps = true;  // original URL was HTTPS → confirmed\n  } else if (normalizedIsHttps && rawWasHttp) {\n    // Normalizer upgraded http→https — confirm with HSTS header\n    isHttps = serverConfirmsHttps;\n  }\n\n  // Patch security.isHttps in seoHomepage (override what SEO Source Detector set)\n  const patchedSecurity = { ...security, isHttps };\n  const patchedHomepage = { ...homepage, security: patchedSecurity };\n\n  // ── Robots ──────────────────────────────────────────────────────\n  const robotsBody =\n    typeof robotsRaw.body === \"string\" ? robotsRaw.body :\n    typeof robotsRaw.data === \"string\" ? robotsRaw.data : \"\";\n\n  const robotsPresent =\n    robotsRaw.present === true ||\n    (typeof robotsRaw.statusCode === \"number\" &&\n      robotsRaw.statusCode >= 200 && robotsRaw.statusCode < 400);\n\n  const disallowRules    = (robotsBody.match(/^Disallow:/gim) || []).length;\n  const disallowAll      = /disallow:\\s*\\/\\s*$/im.test(robotsBody);\n  const sitemapDirectives = [];\n  for (const m of robotsBody.matchAll(/^Sitemap:\\s*(.+)$/gim)) {\n    const url = String(m[1] || \"\").trim();\n    if (url) sitemapDirectives.push(url);\n  }\n\n  const robots = {\n    present:             robotsPresent,\n    disallowAll,\n    disallowRules,\n    hasSitemapDirective: sitemapDirectives.length > 0,\n    sitemapDirectives,\n  };\n\n  // ── Sitemap ──────────────────────────────────────────────────────\n  const sitemapBody =\n    typeof sitemapRaw.body === \"string\" ? sitemapRaw.body :\n    typeof sitemapRaw.data === \"string\" ? sitemapRaw.data : \"\";\n\n  const sitemapPresent =\n    sitemapRaw.present === true ||\n    (typeof sitemapRaw.statusCode === \"number\" &&\n      sitemapRaw.statusCode >= 200 && sitemapRaw.statusCode < 400);\n\n  const sitemap = {\n    present:         sitemapPresent,\n    urlCount:        Number(sitemapRaw.urlCount || 0) || (sitemapBody.match(/<url>/gi) || []).length,\n    hasImageSitemap: sitemapBody.includes(\"<image:image>\"),\n    hasNewsSitemap:  sitemapBody.includes(\"<news:news>\"),\n    hasSitemapIndex: sitemapBody.includes(\"<sitemapindex\"),\n  };\n\n  // ── SEO normalized payload ───────────────────────────────────────\n  const seo = {\n    source:           \"HTML\",\n    confidence:       techFP.auditCoverage !== \"FULL\" ? \"PARTIAL\" : \"HIGH\",\n    confidenceFactor: techFP.auditCoverage !== \"FULL\" ? 0.7 : 1,\n    homepage:         patchedHomepage,\n    robots,\n    sitemap,\n    techFingerprint:  techFP,\n  };\n\n  out.push({ json: { ...input, seo } });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -240
+      ],
+      "id": "41fc3594-9b0b-4b51-ad5c-6c73ff55b01f",
+      "name": "Normalize SEO Payload"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 5,
+        "options": {
+          "includeUnpaired": false
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -384,
+        -288
+      ],
+      "id": "6393639f-b405-4363-8d86-b43a6829c026",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\n\nfor (const item of $input.all()) {\n  const body = item.json.body ?? {};\n  const profileUrl = String(body.profileUrl || \"\").trim();\n  const website = String(body.website || \"\").trim();\n\n  const hasProfileUrl = profileUrl.length > 0;\n  const hasWebsite = website.length > 0;\n\n  out.push({\n    json: {\n      ...item.json,\n      isValid: hasProfileUrl,\n      validationStatus: hasProfileUrl ? \"OK\" : \"INVALID\",\n      validationDetails: {\n        hasProfileUrl,\n        hasWebsite\n      },\n      validatedAt: new Date().toISOString()\n    }\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1984,
+        176
+      ],
+      "id": "cb541c3b-d6c7-4e97-b166-a81ba7c10ac8",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const BLOCKED_HOSTS = [\n  \"linkedin.com\",\n  \"facebook.com\",\n  \"instagram.com\",\n  \"x.com\",\n  \"twitter.com\",\n  \"youtube.com\",\n  \"tiktok.com\",\n  \"bing.com\",\n  \"google.com\"\n];\n\nfunction hostMatchesBlocked(host, token) {\n  const h = String(host || \"\").toLowerCase();\n  const t = String(token || \"\").toLowerCase();\n  if (!h || !t) return false;\n  return h === t || h.endsWith(`.${t}`);\n}\n\nfunction extractHost(rawInput) {\n  let s = String(rawInput || \"\").trim();\n\n  s = s\n    .replace(/^[\"'`\\s]+|[\"'`\\s]+$/g, \"\")\n    .replace(/[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\u202A-\\u202E]/g, \"\");\n\n  if (!s) return { ok: false, error: \"NO_WEBSITE_FOUND\" };\n\n  if (!/^https?:\\/\\//i.test(s)) s = `https://${s}`;\n  s = s.replace(/\\\\/g, \"/\");\n\n  const m = s.match(/^https?:\\/\\/([^\\/:?#\\s]+)(?::\\d+)?(?:[\\/?#]|$)/i);\n  if (!m || !m[1]) return { ok: false, error: \"HOST_EXTRACT_FAILED\", debugRaw: s };\n\n  const host = m[1].toLowerCase().replace(/\\.+$/, \"\");\n  if (!/^[a-z0-9-]+(\\.[a-z0-9-]+)+$/i.test(host)) {\n    return { ok: false, error: \"INVALID_HOSTNAME\", debugRaw: s, host };\n  }\n\n  if (BLOCKED_HOSTS.some((b) => hostMatchesBlocked(host, b))) {\n    return { ok: false, error: \"BLOCKED_HOST\", debugRaw: s, host };\n  }\n\n  return { ok: true, host, normalized: `https://${host}`, raw: s };\n}\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const raw =\n    j.website ??\n    j.body?.website ??\n    j.params?.website ??\n    j.query?.website ??\n    \"\";\n\n  const parsed = extractHost(raw);\n\n  if (!parsed.ok) {\n    out.push({\n      json: {\n        ...j,\n        websiteRaw: String(raw || \"\").trim(),\n        websiteNormalized: null,\n        websiteHost: parsed.host || null,\n        websiteValid: false,\n        websiteStatus: parsed.error === \"NO_WEBSITE_FOUND\" ? \"NO_WEBSITE\" : \"INVALID_WEBSITE\",\n        normalizeError: parsed.error,\n        normalizeDebugRaw: parsed.debugRaw || null,\n        normalizedAt: new Date().toISOString()\n      }\n    });\n    continue;\n  }\n\n  out.push({\n    json: {\n      ...j,\n      websiteRaw: parsed.raw,\n      websiteNormalized: parsed.normalized,\n      websiteHost: parsed.host,\n      websiteValid: true,\n      websiteStatus: \"WEBSITE_OK\",\n      normalizeError: null,\n      normalizedAt: new Date().toISOString()\n    }\n  });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        176
+      ],
+      "id": "320b5e90-2b54-42f5-8681-0f2026e517ca",
+      "name": "Normalize website"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\n\n// ── Utilities ──────────────────────────────────────────────────────\nfunction pickBody(j) {\n  if (typeof j?.body === \"string\") return j.body;\n  if (typeof j?.data === \"string\") return j.data;\n  if (typeof j?.raw === \"string\") return j.raw;\n  return \"\";\n}\nfunction firstMatch(re, txt) {\n  const m = txt.match(re);\n  return m && m[1] ? String(m[1]).trim() : \"\";\n}\nfunction estimateWordCount(raw) {\n  return raw\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, \"\")\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, \"\")\n    .replace(/<[^>]+>/g, \" \")\n    .replace(/&[a-z#0-9]+;/gi, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim()\n    .split(\" \")\n    .filter(w => w.length > 2).length;\n}\nfunction extractJsonLdTypes(raw) {\n  const types = [];\n  const regex = /<script[^>]+type=[\"']application\\/ld\\+json[\"'][^>]*>([\\s\\S]*?)<\\/script>/gi;\n  let m;\n  while ((m = regex.exec(raw)) !== null) {\n    try {\n      const obj = JSON.parse(m[1]);\n      const items = Array.isArray(obj) ? obj : [obj];\n      for (const item of items) {\n        if (item[\"@type\"]) {\n          const t = Array.isArray(item[\"@type\"]) ? item[\"@type\"] : [item[\"@type\"]];\n          types.push(...t);\n        }\n      }\n    } catch {}\n  }\n  return [...new Set(types)];\n}\n\n// ── Technology Fingerprint ─────────────────────────────────────────\nfunction detectTechnologies(raw, headers) {\n  const h = k => String(headers[k] || headers[k.toLowerCase()] || \"\");\n  const poweredBy = h(\"x-powered-by\").toLowerCase();\n  const serverH   = h(\"server\").toLowerCase();\n\n  const tech = {\n    frameworks:    [],\n    cms:           null,\n    ecommerce:     null,\n    siteBuilder:   null,\n    renderType:    \"UNKNOWN\",  // SSR | CSR | CSR_BUILDER | SERVER_RENDERED | STATIC\n    auditCoverage: \"FULL\",     // FULL | PARTIAL_JS | PARTIAL_BUILDER\n    analytics:     {},\n    serverHints:   [],\n  };\n\n  // ── SSR JS frameworks ──────────────────────────────────────\n  if (/\\b__NEXT_DATA__\\b/.test(raw) || raw.includes(\"/_next/\") || poweredBy.includes(\"next.js\")) {\n    tech.frameworks.push(\"Next.js\");\n    tech.renderType = \"SSR\";\n  }\n  if (raw.includes(\"__NUXT__\") || raw.includes(\"/_nuxt/\") || raw.includes(\"__NUXT_DATA__\")) {\n    tech.frameworks.push(\"Nuxt.js\");\n    tech.renderType = \"SSR\";\n  }\n  if (raw.includes(\"___gatsby\") || raw.includes(\"/gatsby-chunk-\")) {\n    tech.frameworks.push(\"Gatsby\");\n    tech.renderType = \"SSR\";\n  }\n  if (raw.includes(\"astro-island\") || /astro\\.build\\/client/i.test(raw)) {\n    tech.frameworks.push(\"Astro\");\n    tech.renderType = \"SSR\";\n  }\n  if (/sveltekit|__sveltekit/i.test(raw)) {\n    tech.frameworks.push(\"SvelteKit\");\n    tech.renderType = \"SSR\";\n  }\n  if (/remix\\.run|__remixContext/i.test(raw)) {\n    tech.frameworks.push(\"Remix\");\n    tech.renderType = \"SSR\";\n  }\n\n  // ── CSR JS frameworks (only if not already SSR) ─────────────\n  const isSSR = tech.renderType === \"SSR\";\n  if (!isSSR) {\n    if (/data-reactroot|react\\.production\\.min|react\\.development\\.js/.test(raw)) {\n      tech.frameworks.push(\"React (CSR)\");\n      if (tech.renderType === \"UNKNOWN\") tech.renderType = \"CSR\";\n    }\n    if (/__vue_app__|vue\\.global\\.prod|vue\\.esm-bundler/.test(raw)) {\n      tech.frameworks.push(\"Vue.js (CSR)\");\n      if (tech.renderType === \"UNKNOWN\") tech.renderType = \"CSR\";\n    }\n    if (/ng-version=|angular(?:\\.min|\\.core)\\.js/i.test(raw)) {\n      tech.frameworks.push(\"Angular (CSR)\");\n      if (tech.renderType === \"UNKNOWN\") tech.renderType = \"CSR\";\n    }\n    if (/ember\\.(min\\.)?js|Ember\\.Application/i.test(raw)) {\n      tech.frameworks.push(\"Ember.js (CSR)\");\n      if (tech.renderType === \"UNKNOWN\") tech.renderType = \"CSR\";\n    }\n  }\n\n  // ── CMS ────────────────────────────────────────────────────\n  if (raw.includes(\"/wp-content/\") || raw.includes(\"/wp-includes/\") || raw.includes(\"wp-json\")) {\n    tech.cms = \"WordPress\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/\\/components\\/com_|joomla!/i.test(raw)) {\n    tech.cms = \"Joomla\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/drupal\\.settings|drupal\\.js|data-drupal/i.test(raw)) {\n    tech.cms = \"Drupal\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/typo3conf|typo3temp/i.test(raw)) {\n    tech.cms = \"TYPO3\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/shopware/i.test(raw)) {\n    tech.cms = \"Shopware\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/spip\\//i.test(raw)) {\n    tech.cms = \"SPIP\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  }\n\n  // ── E-commerce platforms ────────────────────────────────────\n  if (raw.includes(\"cdn.shopify.com\") || /Shopify\\.(theme|shop|currency|PaymentButton)/i.test(raw) || /\\.myshopify\\.com/.test(raw)) {\n    tech.ecommerce = \"Shopify\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/woocommerce|wc-block-|wc-cart/i.test(raw)) {\n    tech.ecommerce = \"WooCommerce\";\n    if (!tech.cms) tech.cms = \"WordPress\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/prestashop|presta-shop/i.test(raw)) {\n    tech.ecommerce = \"PrestaShop\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/\\/mage\\/|magento|mage-init|Mage\\.Cookies/i.test(raw)) {\n    tech.ecommerce = \"Magento\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/opencart/i.test(raw)) {\n    tech.ecommerce = \"OpenCart\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/bigcommerce/i.test(raw)) {\n    tech.ecommerce = \"BigCommerce\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/wix\\.stores|wixstores/i.test(raw)) {\n    tech.ecommerce = \"Wix Stores\";\n  }\n\n  // ── Site Builders / No-code / AI builders ───────────────────\n  if (raw.includes(\"static.wixstatic.com\") || /wixsite\\.com|wixpress\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Wix\";\n    tech.renderType  = \"CSR_BUILDER\";\n  } else if (/squarespace\\.com\\/assets|\\.squarespace\\.com|sqsp\\.net/i.test(raw)) {\n    tech.siteBuilder = \"Squarespace\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/webflow\\.com\\/css|\\.webflow\\.com|assets\\.website-files\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Webflow\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/framer\\.com\\/m\\/|framerusercontent\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Framer\";\n    tech.renderType  = \"CSR_BUILDER\";\n  } else if (/bubble\\.io/i.test(raw)) {\n    tech.siteBuilder = \"Bubble\";\n    tech.renderType  = \"CSR_BUILDER\";\n  } else if (/editor\\.jimdo\\.com|\\.jimdosite\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Jimdo\";\n    tech.renderType  = \"CSR_BUILDER\";\n  } else if (/strikingly\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Strikingly\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/cargo\\.site|2\\.cargocollective\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Cargo\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/notion-static\\.com|super\\.so/i.test(raw)) {\n    tech.siteBuilder = \"Notion/Super\";\n    tech.renderType  = \"CSR_BUILDER\";\n  } else if (/dorik\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Dorik\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/godaddy\\.com\\/gdcorp|godaddy-studio/i.test(raw)) {\n    tech.siteBuilder = \"GoDaddy\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  } else if (/shoptet\\.cz|shoptet\\.com/i.test(raw)) {\n    tech.siteBuilder = \"Shoptet\";\n    if (tech.renderType === \"UNKNOWN\") tech.renderType = \"SERVER_RENDERED\";\n  }\n\n  // ── Server tech hints ────────────────────────────────────────\n  if (poweredBy.includes(\"php\"))     tech.serverHints.push(\"PHP\");\n  if (poweredBy.includes(\"express\")) tech.serverHints.push(\"Node/Express\");\n  if (poweredBy.includes(\"asp.net\")) tech.serverHints.push(\"ASP.NET\");\n  if (poweredBy.includes(\"ruby\"))    tech.serverHints.push(\"Ruby\");\n  if (serverH.includes(\"nginx\"))     tech.serverHints.push(\"Nginx\");\n  if (serverH.includes(\"apache\"))    tech.serverHints.push(\"Apache\");\n  if (serverH.includes(\"cloudflare\")) tech.serverHints.push(\"Cloudflare\");\n\n  // ── Analytics signals (marketing intelligence) ───────────────\n  tech.analytics = {\n    hasGTM:     /googletagmanager\\.com\\/gtm/i.test(raw),\n    hasGA4:     /gtag\\('config'|google-analytics\\.com\\/g\\//i.test(raw),\n    hasGA3:     /ga\\('create'|analytics\\.js|ga\\.js/i.test(raw),\n    hasFBPixel: /connect\\.facebook\\.net.*fbevents/i.test(raw),\n    hasHotjar:  /hotjar\\.com/i.test(raw),\n    hasIntercom:/intercom\\.io|intercomcdn\\.com/i.test(raw),\n    hasMixpanel:/mixpanel\\.com/i.test(raw),\n    hasHubspot: /js\\.hs-scripts\\.com|hubspot\\.com/i.test(raw),\n    hasCrisp:   /crisp\\.chat/i.test(raw),\n    hasTidio:   /tidiochat\\.com/i.test(raw),\n  };\n\n  // ── Audit coverage determination ─────────────────────────────\n  if (tech.renderType === \"CSR_BUILDER\") {\n    tech.auditCoverage = \"PARTIAL_BUILDER\";\n  } else if (tech.renderType === \"CSR\") {\n    tech.auditCoverage = \"PARTIAL_JS\";\n  } else {\n    tech.auditCoverage = \"FULL\";\n  }\n\n  if (tech.renderType === \"UNKNOWN\") tech.renderType = \"STATIC\";\n\n  return tech;\n}\n\n// ── Main loop ──────────────────────────────────────────────────────\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const raw = pickBody(j);\n  const headers = j.headers || {};\n  const contentType = String(\n    headers[\"content-type\"] || headers[\"Content-Type\"] || \"\"\n  ).toLowerCase();\n  const statusCode  = Number(j.statusCode || j.status || 0);\n  const host        = String(j.websiteHost || \"\").toLowerCase();\n  const websiteNorm = String(j.websiteNormalized || \"\");\n\n  const homepage = {\n    reachable:    statusCode >= 200 && statusCode < 400,\n    statusCode:   statusCode || null,\n    htmlLength:   0,\n    // On-page\n    hasTitle: false, title: \"\", titleLength: 0,\n    hasMetaDescription: false, metaDescription: \"\", metaDescriptionLength: 0,\n    hasH1: false, h1Count: 0, h2Count: 0, h3Count: 0,\n    estimatedWordCount: 0,\n    // Indexability\n    hasCanonical: false, canonical: \"\",\n    hasNoindex: false, hasNofollow: false,\n    // Technical\n    hasViewport: false,\n    scriptCount: 0, headScriptCount: 0,\n    isJsHeavy: false,\n    isXml: false,\n    hasLazyLoading: false, hasWebAppManifest: false,\n    hasAmpLink: false, hasFavicon: false,\n    hasCSSinline: false,\n    // Structured data\n    hasStructuredData: false, structuredDataTypes: [],\n    hasMicrodata: false,\n    // Social / OG\n    hasOgTitle: false, ogTitle: \"\",\n    hasOgDescription: false, ogDescription: \"\",\n    hasOgImage: false, ogImageUrl: \"\",\n    hasTwitterCard: false, twitterCardType: \"\",\n    hasHreflang: false,\n    // Images & Links\n    imageCount: 0, imageMissingAltCount: 0,\n    internalLinkCount: 0, externalLinkCount: 0,\n    // Security (from headers)\n    security: {\n      isHttps:              null,  // resolved post-Merge in Normalize SEO Payload\n      hasHSTS:              false,\n      hasXFrameOptions:     false,\n      hasCSP:               false,\n      hasXContentTypeOptions: false,\n      hasReferrerPolicy:    false,\n    },\n    reason: null\n  };\n\n  // Security headers\n  const gh = name => Boolean(headers[name] || headers[name.toLowerCase()]);\n  homepage.security.hasHSTS               = gh(\"strict-transport-security\");\n  homepage.security.hasXFrameOptions      = gh(\"x-frame-options\");\n  homepage.security.hasCSP                = gh(\"content-security-policy\");\n  homepage.security.hasXContentTypeOptions = gh(\"x-content-type-options\");\n  homepage.security.hasReferrerPolicy     = gh(\"referrer-policy\");\n\n  // XML / sitemap\n  if (\n    contentType.includes(\"xml\") ||\n    raw.startsWith(\"<?xml\") ||\n    raw.includes(\"<sitemapindex\")\n  ) {\n    homepage.isXml = true;\n    homepage.reason = \"XML_RESPONSE\";\n    const techFingerprint = detectTechnologies(raw, headers);\n    out.push({ json: { ...j, seoHomepage: homepage, techFingerprint } });\n    continue;\n  }\n\n  const looksHtml =\n    contentType.includes(\"text/html\") ||\n    /<!doctype html/i.test(raw) ||\n    /<html[\\s>]/i.test(raw);\n\n  if (looksHtml) {\n    homepage.htmlLength = raw.length;\n\n    // ── Title ──\n    const titleText = firstMatch(/<title[^>]*>([\\s\\S]*?)<\\/title>/i, raw)\n      .replace(/\\s+/g, \" \").trim();\n    homepage.title        = titleText;\n    homepage.hasTitle     = Boolean(titleText);\n    homepage.titleLength  = titleText.length;\n\n    // ── Meta Description ──\n    const metaDesc =\n      firstMatch(/<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) ||\n      firstMatch(/<meta[^>]+content=[\"']([^\"']*)[\"'][^>]+name=[\"']description[\"']/i, raw);\n    homepage.hasMetaDescription      = Boolean(metaDesc);\n    homepage.metaDescription         = String(metaDesc || \"\").trim();\n    homepage.metaDescriptionLength   = homepage.metaDescription.length;\n\n    // ── Headings ──\n    homepage.h1Count  = (raw.match(/<h1[^>]*>/gi) || []).length;\n    homepage.h2Count  = (raw.match(/<h2[^>]*>/gi) || []).length;\n    homepage.h3Count  = (raw.match(/<h3[^>]*>/gi) || []).length;\n    homepage.hasH1    = homepage.h1Count > 0;\n\n    // ── Viewport ──\n    homepage.hasViewport = /(<meta[^>]+name=[\"']viewport[\"'])/i.test(raw);\n\n    // ── Scripts ──\n    homepage.scriptCount = (raw.match(/<script/gi) || []).length;\n    const headMatch = raw.match(/<head[^>]*>([\\s\\S]*?)<\\/head>/i);\n    if (headMatch) {\n      const headHtml = headMatch[1];\n      homepage.headScriptCount = (\n        headHtml.match(/<script(?![^>]*type=[\"'](?:application\\/ld\\+json|module)[\"'])[^>]*src=/gi) || []\n      ).length;\n    }\n\n    // ── Inline CSS size ──\n    const styleBlocks = raw.match(/<style[^>]*>([\\s\\S]*?)<\\/style>/gi) || [];\n    const inlineCssLen = styleBlocks.reduce((acc, s) => acc + s.length, 0);\n    homepage.hasCSSinline = inlineCssLen > 2000;\n\n    // ── Canonical ──\n    const canonical =\n      firstMatch(/<link[^>]+rel=[\"']canonical[\"'][^>]+href=[\"']([^\"']+)[\"']/i, raw) ||\n      firstMatch(/<link[^>]+href=[\"']([^\"']+)[\"'][^>]+rel=[\"']canonical[\"']/i, raw);\n    homepage.hasCanonical = Boolean(canonical);\n    homepage.canonical    = canonical || \"\";\n\n    // ── Robots meta ──\n    const robotsMeta =\n      firstMatch(/<meta[^>]+name=[\"']robots[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) ||\n      firstMatch(/<meta[^>]+content=[\"']([^\"']*)[\"'][^>]+name=[\"']robots[\"']/i, raw);\n    const robotsNorm       = String(robotsMeta || \"\").toLowerCase();\n    homepage.hasNoindex    = robotsNorm.includes(\"noindex\");\n    homepage.hasNofollow   = robotsNorm.includes(\"nofollow\");\n\n    // ── Open Graph ──\n    homepage.hasOgTitle       = /(<meta[^>]+property=[\"']og:title[\"'])/i.test(raw);\n    homepage.ogTitle          = firstMatch(/<meta[^>]+property=[\"']og:title[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) || \"\";\n    homepage.hasOgDescription = /(<meta[^>]+property=[\"']og:description[\"'])/i.test(raw);\n    homepage.ogDescription    = firstMatch(/<meta[^>]+property=[\"']og:description[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) || \"\";\n    homepage.hasOgImage       = /(<meta[^>]+property=[\"']og:image[\"'])/i.test(raw);\n    homepage.ogImageUrl       = firstMatch(/<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) || \"\";\n    homepage.hasTwitterCard   = /(<meta[^>]+name=[\"']twitter:card[\"'])/i.test(raw);\n    homepage.twitterCardType  = firstMatch(/<meta[^>]+name=[\"']twitter:card[\"'][^>]+content=[\"']([^\"']*)[\"']/i, raw) || \"\";\n    homepage.hasHreflang      = /(<link[^>]+hreflang=)/i.test(raw);\n\n    // ── Structured data ──\n    homepage.hasStructuredData  = /(<script[^>]+type=[\"']application\\/ld\\+json[\"'])/i.test(raw);\n    if (homepage.hasStructuredData) {\n      homepage.structuredDataTypes = extractJsonLdTypes(raw);\n    }\n    homepage.hasMicrodata = /\\bitemscope\\b/i.test(raw);\n\n    // ── Misc technical ──\n    homepage.hasLazyLoading    = /loading=[\"']lazy[\"']/i.test(raw);\n    homepage.hasAmpLink        = /(<link[^>]+rel=[\"']amphtml[\"'])/i.test(raw);\n    homepage.hasFavicon        = /(<link[^>]+rel=[\"'](?:shortcut icon|icon)[\"'])/i.test(raw);\n    homepage.hasWebAppManifest = /(<link[^>]+rel=[\"']manifest[\"'])/i.test(raw);\n\n    // ── Images ──\n    const imgTags = raw.match(/<img\\b[^>]*>/gi) || [];\n    homepage.imageCount          = imgTags.length;\n    homepage.imageMissingAltCount = imgTags.filter(tag =>\n      !/\\balt\\s*=\\s*[\"'][^\"']+[\"']/i.test(tag)\n    ).length;\n\n    // ── Links ──\n    const hrefs = [...raw.matchAll(/<a\\b[^>]*href\\s*=\\s*[\"']([^\"']+)[\"']/gi)]\n      .map(m => String(m[1] || \"\"));\n    let internal = 0, external = 0;\n    for (const href of hrefs) {\n      if (!href || /^(#|javascript:|mailto:|tel:)/i.test(href)) continue;\n      if (href.startsWith(\"/\")) { internal++; continue; }\n      if (/^https?:\\/\\//i.test(href)) {\n        try {\n          const h = new URL(href).hostname.toLowerCase();\n          if (host && (h === host || h.endsWith(`.${host}`) || host.endsWith(`.${h}`))) internal++;\n          else external++;\n        } catch { external++; }\n      }\n    }\n    homepage.internalLinkCount = internal;\n    homepage.externalLinkCount = external;\n\n    // ── Word count ──\n    homepage.estimatedWordCount = estimateWordCount(raw);\n\n    // ── Reason / JS Heavy ──\n    if (statusCode === 401 || statusCode === 403 || statusCode === 429) {\n      homepage.reason = `HTTP_${statusCode}_BLOCKED`;\n    } else if (homepage.htmlLength < 25000 && homepage.scriptCount >= 14) {\n      homepage.isJsHeavy = true;\n      homepage.reason    = \"JS_HEAVY_SITE\";\n    } else {\n      homepage.reason = \"HTML_OK\";\n    }\n\n    const techFingerprint = detectTechnologies(raw, headers);\n    out.push({ json: { ...j, seoHomepage: homepage, techFingerprint } });\n    continue;\n  }\n\n  // Non-HTML fallback\n  if (!homepage.reachable) {\n    homepage.reason = statusCode >= 500 ? `HTTP_${statusCode}` : \"NETWORK_OR_EMPTY\";\n  } else {\n    homepage.reason = statusCode ? `HTTP_${statusCode}_NON_HTML` : \"NON_HTML_RESPONSE\";\n  }\n\n  const techFingerprint = detectTechnologies(raw, headers);\n  out.push({ json: { ...j, seoHomepage: homepage, techFingerprint } });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1328,
+        -160
+      ],
+      "id": "95066d58-dc3e-4ef5-b1d5-87554dfa1ac7",
+      "name": "SEO Source Detector"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\n\n// ─────────────────────────────────────────────────────────────────\n// HELPERS\n// ─────────────────────────────────────────────────────────────────\n\nfunction issue(key, msg, severity = \"warning\") {\n  return { key, msg, severity };\n}\nfunction pass(msg) {\n  return msg;\n}\nfunction skip(key, msg) {\n  return { key, msg, severity: \"skip\" };\n}\n\n// ─────────────────────────────────────────────────────────────────\n// CATEGORY: INDEXABILITY (30 pts)  — always fully auditable\n// ─────────────────────────────────────────────────────────────────\nfunction scoreIndexability(homepage, robots, sitemap) {\n  let score = 30;\n  const issues = [], passed = [], skipped = [];\n\n  if (homepage.hasNoindex) {\n    score -= 30;\n    issues.push(issue(\"noindex\", \"⛔ Meta robots: noindex détecté — page exclue des moteurs\", \"critical\"));\n  } else {\n    passed.push(\"Pas de noindex\");\n  }\n\n  if (robots.disallowAll) {\n    score -= 20;\n    issues.push(issue(\"robots_disallow_all\", \"⛔ robots.txt bloque tout le crawl (Disallow: /)\", \"critical\"));\n  } else if (!robots.present) {\n    score -= 5;\n    issues.push(issue(\"robots_missing\", \"robots.txt introuvable\", \"warning\"));\n  } else {\n    passed.push(`robots.txt présent${robots.disallowRules > 0 ? ` — ${robots.disallowRules} règle(s) Disallow` : \"\"}`);\n  }\n\n  if (!homepage.hasCanonical) {\n    score -= 6;\n    issues.push(issue(\"canonical_missing\", \"Balise canonical absente\", \"warning\"));\n  } else if (!String(homepage.canonical || \"\").startsWith(\"https://\")) {\n    score -= 3;\n    issues.push(issue(\"canonical_not_https\", \"Canonical ne pointe pas en HTTPS\", \"warning\"));\n  } else {\n    passed.push(\"Canonical HTTPS défini\");\n  }\n\n  if (!sitemap.present) {\n    score -= 5;\n    issues.push(issue(\"sitemap_missing\", \"sitemap.xml introuvable à /sitemap.xml\", \"warning\"));\n  } else if ((sitemap.urlCount || 0) === 0) {\n    score -= 2;\n    issues.push(issue(\"sitemap_empty\", \"Sitemap présent mais vide ou illisible\", \"warning\"));\n  } else {\n    passed.push(`Sitemap XML présent — ${sitemap.urlCount} URL(s) détectée(s)`);\n    if (sitemap.hasSitemapIndex) passed.push(\"Sitemap index multi-fichiers détecté\");\n  }\n\n  if (robots.present && !robots.hasSitemapDirective) {\n    score -= 1;\n    issues.push(issue(\"robots_no_sitemap_ref\", \"robots.txt ne référence pas le sitemap\", \"info\"));\n  } else if (robots.hasSitemapDirective) {\n    passed.push(\"Sitemap référencé dans robots.txt\");\n  }\n\n  return { score: Math.max(0, Math.min(30, score)), max: 30, issues, passed, skipped };\n}\n\n// ─────────────────────────────────────────────────────────────────\n// CATEGORY: ON-PAGE (35 pts) — adaptive for CSR / builders\n// ─────────────────────────────────────────────────────────────────\nfunction scoreOnPage(homepage, tech) {\n  const isPartial   = tech.auditCoverage !== \"FULL\";\n  const isEcommerce = Boolean(tech.ecommerce);\n  const sdTypes     = homepage.structuredDataTypes || [];\n\n  let score    = 35;\n  let maxScore = 35;\n  const issues = [], passed = [], skipped = [];\n\n  // ── Title ──\n  if (!homepage.hasTitle) {\n    score -= 12; maxScore -= 0;\n    issues.push(issue(\"title_missing\", \"⛔ Balise <title> absente\", \"critical\"));\n  } else if (homepage.titleLength < 30) {\n    score -= 5;\n    issues.push(issue(\"title_short\", `Title trop court — ${homepage.titleLength} car. (min 30)`, \"warning\"));\n  } else if (homepage.titleLength > 65) {\n    score -= 2;\n    issues.push(issue(\"title_long\", `Title trop long — ${homepage.titleLength} car. (max 65)`, \"info\"));\n  } else {\n    passed.push(`Title OK — ${homepage.titleLength} car.`);\n  }\n\n  // ── Meta description ──\n  if (!homepage.hasMetaDescription) {\n    score -= 8; \n    issues.push(issue(\"desc_missing\", \"Meta description absente\", \"critical\"));\n  } else if (homepage.metaDescriptionLength < 70) {\n    score -= 4;\n    issues.push(issue(\"desc_short\", `Meta description trop courte — ${homepage.metaDescriptionLength} car. (min 70)`, \"warning\"));\n  } else if (homepage.metaDescriptionLength > 170) {\n    score -= 2;\n    issues.push(issue(\"desc_long\", `Meta description trop longue — ${homepage.metaDescriptionLength} car. (max 170)`, \"info\"));\n  } else {\n    passed.push(`Meta description OK — ${homepage.metaDescriptionLength} car.`);\n  }\n\n  // ── H1 (skippable for CSR) ──\n  if (isPartial && !homepage.hasH1) {\n    maxScore -= 8;\n    skipped.push(skip(\"h1_js\", \"H1 non analysable — contenu rendu côté client\"));\n  } else if (!homepage.hasH1) {\n    score -= 8;\n    issues.push(issue(\"h1_missing\", \"⛔ Balise H1 absente\", \"critical\"));\n  } else if (homepage.h1Count > 1) {\n    // Ecommerce: multiple H1 more common, reduce penalty\n    const penalty = isEcommerce ? 3 : 5;\n    score -= penalty;\n    issues.push(issue(\"h1_multiple\", `${homepage.h1Count} H1 détectés (1 recommandé)`, \"warning\"));\n  } else {\n    passed.push(\"H1 unique présent\");\n  }\n\n  // ── H2 structure (skippable for CSR) ──\n  if (isPartial) {\n    maxScore -= 2;\n    skipped.push(skip(\"h2_js\", \"Structure H2/H3 non analysable — rendu client\"));\n  } else if ((homepage.h2Count || 0) === 0) {\n    score -= 2;\n    issues.push(issue(\"h2_missing\", \"Aucun H2 — structure de contenu plate\", \"info\"));\n  } else {\n    passed.push(`${homepage.h2Count} H2${homepage.h3Count > 0 ? `, ${homepage.h3Count} H3` : \"\"} détectés`);\n  }\n\n  // ── Structured data ──\n  if (!homepage.hasStructuredData && !homepage.hasMicrodata) {\n    score -= 4;\n    issues.push(issue(\"schema_missing\", \"Données structurées Schema.org absentes\", \"warning\"));\n  } else {\n    const typeStr = sdTypes.length > 0 ? sdTypes.slice(0, 4).join(\", \") : \"microdata\";\n    passed.push(`Schema.org: ${typeStr}`);\n    // Ecommerce bonus: check for Product/BreadcrumbList\n    if (isEcommerce) {\n      if (sdTypes.some(t => [\"Product\", \"Offer\", \"ItemList\"].includes(t))) {\n        passed.push(\"Schema Product/Offer détecté — bon pour le rich snippet e-commerce\");\n      }\n      if (sdTypes.includes(\"BreadcrumbList\")) {\n        passed.push(\"BreadcrumbList Schema détecté\");\n      }\n    }\n  }\n\n  // ── Content depth (skippable for CSR) ──\n  const wc = homepage.estimatedWordCount || 0;\n  if (isPartial) {\n    maxScore -= 4;\n    skipped.push(skip(\"wordcount_js\", \"Volume de contenu non analysable — rendu client\"));\n  } else if (wc < 150) {\n    score -= 4;\n    issues.push(issue(\"thin_content\", `Contenu très limité — ~${wc} mots estimés`, \"warning\"));\n  } else if (wc < 400) {\n    score -= 2;\n    issues.push(issue(\"light_content\", `Contenu estimé faible — ~${wc} mots`, \"info\"));\n  } else {\n    passed.push(`Contenu estimé: ~${wc} mots`);\n  }\n\n  // ── Builder SEO notice ──\n  if (tech.siteBuilder) {\n    const builderNotes = {\n      \"Wix\":       \"Wix: SEO basique disponible, mais dépend du plan et des paramètres\",\n      \"Framer\":    \"Framer: SEO limité — title/meta définis manuellement par page\",\n      \"Bubble\":    \"Bubble: SEO très limité — peu de contrôle natif\",\n      \"Squarespace\": \"Squarespace: SEO correct nativement\",\n      \"Webflow\":   \"Webflow: Bon contrôle SEO disponible\",\n    };\n    const note = builderNotes[tech.siteBuilder];\n    if (note) passed.push(note);\n  }\n\n  return {\n    score:    Math.max(0, Math.min(maxScore, score)),\n    max:      maxScore,\n    issues, passed, skipped\n  };\n}\n\n// ─────────────────────────────────────────────────────────────────\n// CATEGORY: TECHNICAL (25 pts)\n// ─────────────────────────────────────────────────────────────────\nfunction scoreTechnical(homepage, tech) {\n  let score = 25;\n  const issues = [], passed = [], skipped = [];\n  const security = homepage.security || {};\n\n  // ── HTTPS ──\n  if (!security.isHttps) {\n    score -= 10;\n    issues.push(issue(\"no_https\", \"⛔ Site non HTTPS — critique pour le référencement\", \"critical\"));\n  } else {\n    passed.push(\"HTTPS actif\");\n  }\n\n  // ── Mobile viewport ──\n  if (!homepage.hasViewport) {\n    score -= 5;\n    issues.push(issue(\"no_viewport\", \"⛔ Meta viewport absent — site non mobile-friendly\", \"critical\"));\n  } else {\n    passed.push(\"Viewport mobile présent\");\n  }\n\n  // ── JS Heavy detection ──\n  if (homepage.isJsHeavy || tech.renderType === \"CSR\" || tech.renderType === \"CSR_BUILDER\") {\n    if (tech.renderType === \"CSR_BUILDER\") {\n      score -= 3;\n      issues.push(issue(\"csr_builder\", `Site builder (${tech.siteBuilder || \"no-code\"}) — rendu client-side, crawlabilité partielle`, \"warning\"));\n    } else if (homepage.isJsHeavy || tech.renderType === \"CSR\") {\n      score -= 4;\n      const fw = (tech.frameworks || []).join(\", \") || \"JS\";\n      issues.push(issue(\"js_heavy\", `Rendu JS côté client (${fw}) — Googlebot peut avoir du mal à indexer le contenu`, \"warning\"));\n    }\n  } else {\n    passed.push(\"Rendu côté serveur — crawlabilité optimale\");\n  }\n\n  // ── Render-blocking scripts ──\n  const hsc = homepage.headScriptCount || 0;\n  if (hsc > 8) {\n    score -= 4;\n    issues.push(issue(\"render_blocking_high\", `${hsc} scripts render-blocking dans <head> — impact LCP/FCP`, \"warning\"));\n  } else if (hsc > 4) {\n    score -= 2;\n    issues.push(issue(\"render_blocking_moderate\", `${hsc} scripts dans <head>`, \"info\"));\n  } else if (hsc <= 2) {\n    passed.push(\"Scripts <head> bien maîtrisés\");\n  }\n\n  // ── HSTS ──\n  if (security.isHttps) {\n    if (!security.hasHSTS) {\n      score -= 1;\n      issues.push(issue(\"no_hsts\", \"HSTS non activé (Strict-Transport-Security)\", \"info\"));\n    } else {\n      passed.push(\"HSTS activé\");\n    }\n    if (security.hasXFrameOptions) passed.push(\"X-Frame-Options défini\");\n    if (security.hasCSP) passed.push(\"Content-Security-Policy présent\");\n    if (security.hasXContentTypeOptions) passed.push(\"X-Content-Type-Options défini\");\n  }\n\n  // ── Favicon ──\n  if (!homepage.hasFavicon) {\n    score -= 1;\n    issues.push(issue(\"no_favicon\", \"Favicon absent\", \"info\"));\n  } else {\n    passed.push(\"Favicon présent\");\n  }\n\n  // ── Tech stack bonuses ──\n  if (homepage.hasWebAppManifest) passed.push(\"Web App Manifest (PWA) présent\");\n  if (homepage.hasAmpLink)        passed.push(\"Version AMP liée\");\n  if (homepage.hasLazyLoading)    passed.push(\"Lazy loading images activé\");\n\n  // ── Analytics presence (conversion intelligence) ──\n  const a = tech.analytics || {};\n  const analyticsTools = [];\n  if (a.hasGTM)      analyticsTools.push(\"GTM\");\n  if (a.hasGA4)      analyticsTools.push(\"GA4\");\n  if (a.hasGA3)      analyticsTools.push(\"UA\");\n  if (a.hasFBPixel)  analyticsTools.push(\"FB Pixel\");\n  if (a.hasHotjar)   analyticsTools.push(\"Hotjar\");\n  if (a.hasHubspot)  analyticsTools.push(\"HubSpot\");\n  if (analyticsTools.length > 0) {\n    passed.push(`Analytics: ${analyticsTools.join(\", \")}`);\n  } else {\n    issues.push(issue(\"no_analytics\", \"Aucun outil d'analytics détecté\", \"info\"));\n  }\n\n  // ── CMS / Platform identification ──\n  if (tech.cms)         passed.push(`CMS: ${tech.cms}`);\n  if (tech.ecommerce)   passed.push(`E-commerce: ${tech.ecommerce}`);\n  if (tech.frameworks?.length > 0) {\n    passed.push(`Framework: ${tech.frameworks.join(\", \")}`);\n  }\n\n  return { score: Math.max(0, Math.min(25, score)), max: 25, issues, passed, skipped };\n}\n\n// ─────────────────────────────────────────────────────────────────\n// CATEGORY: SOCIAL & MEDIA (10 pts)\n// ─────────────────────────────────────────────────────────────────\nfunction scoreSocial(homepage) {\n  let score = 10;\n  const issues = [], passed = [], skipped = [];\n\n  if (!homepage.hasOgTitle) {\n    score -= 2;\n    issues.push(issue(\"og_title_missing\", \"og:title absent\", \"warning\"));\n  } else {\n    passed.push(`og:title: \"${String(homepage.ogTitle || \"\").slice(0, 40)}\"`);\n  }\n\n  if (!homepage.hasOgDescription) {\n    score -= 1;\n    issues.push(issue(\"og_desc_missing\", \"og:description absent\", \"info\"));\n  }\n\n  if (!homepage.hasOgImage) {\n    score -= 2;\n    issues.push(issue(\"og_image_missing\", \"og:image absent — partage social dégradé\", \"warning\"));\n  } else {\n    passed.push(\"og:image présent\");\n  }\n\n  if (!homepage.hasTwitterCard) {\n    score -= 1;\n    issues.push(issue(\"no_twitter_card\", \"Twitter Card absent\", \"info\"));\n  } else {\n    passed.push(`Twitter Card: ${homepage.twitterCardType || \"présent\"}`);\n  }\n\n  // Images alt\n  const imgCount    = homepage.imageCount || 0;\n  const missingAlt  = homepage.imageMissingAltCount || 0;\n  if (imgCount > 0) {\n    const ratio = missingAlt / imgCount;\n    if (ratio > 0.5) {\n      score -= 3;\n      issues.push(issue(\"alt_missing_many\", `${missingAlt}/${imgCount} images sans attribut alt`, \"warning\"));\n    } else if (missingAlt > 0) {\n      score -= 1;\n      issues.push(issue(\"alt_missing_some\", `${missingAlt}/${imgCount} images sans alt`, \"info\"));\n    } else {\n      passed.push(`Alt text complet — ${imgCount} images`);\n    }\n  }\n\n  if (homepage.hasHreflang) passed.push(\"Hreflang: internationalisation active\");\n\n  return { score: Math.max(0, Math.min(10, score)), max: 10, issues, passed, skipped };\n}\n\n// ─────────────────────────────────────────────────────────────────\n// CLASSIFY UNREACHABLE\n// ─────────────────────────────────────────────────────────────────\nfunction classifyUnreachable(statusCode, reason) {\n  const rs = String(reason || \"\").toUpperCase();\n  const sc = Number(statusCode || 0);\n  if (rs.includes(\"TIMEOUT\")) return \"SITE_TIMEOUT\";\n  if (rs.includes(\"DNS\"))     return \"SITE_DNS_ERROR\";\n  if (rs.includes(\"SSL\") || rs.includes(\"TLS\")) return \"SITE_SSL_ERROR\";\n  if (sc === 401 || sc === 403) return \"SITE_FORBIDDEN\";\n  if (sc === 404) return \"SITE_NOT_FOUND\";\n  if (sc >= 500 && sc <= 599) return \"SITE_SERVER_ERROR\";\n  return \"SITE_UNREACHABLE\";\n}\n\n// ─────────────────────────────────────────────────────────────────\n// MAIN LOOP\n// ─────────────────────────────────────────────────────────────────\nfor (const item of $input.all()) {\n  const j        = item.json || {};\n  const seo      = j.seo    || {};\n  const homepage = seo.homepage || {};\n  const robots   = seo.robots   || {};\n  const sitemap  = seo.sitemap  || {};\n  const tech     = seo.techFingerprint || {};\n\n  const websiteStatus = String(j.websiteStatus || \"UNKNOWN\").toUpperCase();\n  const websiteValid  = typeof j.websiteValid === \"boolean\" ? j.websiteValid : null;\n\n  // ── No website ──────────────────────────────────────────────────\n  if (websiteStatus === \"NO_WEBSITE\" || websiteStatus === \"INVALID_WEBSITE\" || websiteValid === false) {\n    out.push({ json: {\n      ...j,\n      seoOpportunity: {\n        rawScore: null, level: \"NO_WEBSITE\", siteType: \"UNKNOWN\",\n        confidence: \"HIGH\", source: \"INPUT\", auditCoverage: \"NONE\",\n        categories: null,\n        issues: [issue(j.normalizeError || \"no_website\", j.normalizeError || \"Aucun site web valide\", \"critical\")],\n        passed: [], skipped: [],\n        technical: { websiteStatus, statusCode: homepage.statusCode || null },\n        techFingerprint: tech,\n        evaluatedAt: new Date().toISOString()\n      }\n    }});\n    continue;\n  }\n\n  // ── Unreachable ─────────────────────────────────────────────────\n  const reachable = homepage.reachable === true;\n  if (!reachable) {\n    const reason = String(homepage.reason || \"\");\n    const level  = classifyUnreachable(homepage.statusCode, reason);\n    out.push({ json: {\n      ...j,\n      seoOpportunity: {\n        rawScore: null, level, siteType: \"UNKNOWN\",\n        confidence: \"HIGH\", source: seo.source || \"HTTP\", auditCoverage: \"NONE\",\n        categories: null,\n        issues: [issue(\"unreachable\", reason || \"Homepage injoignable\", \"critical\")],\n        passed: [], skipped: [],\n        technical: { websiteStatus, statusCode: homepage.statusCode || null },\n        techFingerprint: tech,\n        evaluatedAt: new Date().toISOString()\n      }\n    }});\n    continue;\n  }\n\n  // ── Site type ───────────────────────────────────────────────────\n  let siteType = \"CONTENT\";\n  if (tech.ecommerce)                                                    siteType = \"ECOMMERCE\";\n  else if (tech.cms)                                                     siteType = \"CMS\";\n  else if (tech.siteBuilder)                                             siteType = \"BUILDER\";\n  else if (tech.renderType === \"CSR\" || tech.renderType === \"CSR_BUILDER\") siteType = \"SPA_APP\";\n  else if (tech.renderType === \"SSR\" && tech.frameworks?.length > 0)    siteType = \"MODERN_SSR\";\n  else if ((homepage.htmlLength || 0) > 700000 && (homepage.scriptCount || 0) >= 10) siteType = \"ENTERPRISE\";\n  else if ((homepage.htmlLength || 0) < 15000 && (homepage.estimatedWordCount || 0) < 200) siteType = \"PERSONAL\";\n  else if (homepage.isJsHeavy)                                           siteType = \"JS_APP\";\n\n  // ── Category scoring (adaptive) ─────────────────────────────────\n  const catI = scoreIndexability(homepage, robots, sitemap);\n  const catO = scoreOnPage(homepage, tech);\n  const catT = scoreTechnical(homepage, tech);\n  const catS = scoreSocial(homepage);\n\n  // ── Total score — normalize to 100 if partial audit ─────────────\n  const totalMax = catI.max + catO.max + catT.max + catS.max; // may be < 100 for CSR\n  const rawRaw   = catI.score + catO.score + catT.score + catS.score;\n  // Normalize to 100 scale so the score stays comparable\n  const rawScore = totalMax < 100\n    ? Math.round((rawRaw / totalMax) * 100)\n    : rawRaw;\n\n  // ── Aggregate issues / passed / skipped ──────────────────────────\n  const allIssues  = [...catI.issues,  ...catO.issues,  ...catT.issues,  ...catS.issues];\n  const allPassed  = [...catI.passed,  ...catO.passed,  ...catT.passed,  ...catS.passed];\n  const allSkipped = [...catI.skipped, ...catO.skipped, ...catT.skipped, ...catS.skipped];\n\n  // ── Level ────────────────────────────────────────────────────────\n  const hasCritical = allIssues.some(i => i.severity === \"critical\");\n  let level = \"OK\";\n  if (homepage.hasNoindex || robots.disallowAll) level = \"CRITICAL\";\n  else if (hasCritical || rawScore < 40)          level = \"CRITICAL\";\n  else if (rawScore < 65)                          level = \"WEAK\";\n\n  out.push({ json: {\n    ...j,\n    seoOpportunity: {\n      rawScore,\n      level,\n      siteType,\n      confidence:    seo.confidence || \"MEDIUM\",\n      source:        seo.source     || \"HTML\",\n      auditCoverage: tech.auditCoverage || \"FULL\",\n      categories: {\n        indexability: { score: catI.score, max: catI.max },\n        onPage:       { score: catO.score, max: catO.max },\n        technical:    { score: catT.score, max: catT.max },\n        social:       { score: catS.score, max: catS.max },\n        normalizedTo100: totalMax !== 100,\n      },\n      issues:  allIssues,\n      passed:  allPassed,\n      skipped: allSkipped,\n      technical: {\n        websiteStatus,\n        statusCode:              homepage.statusCode || null,\n        titleLength:             homepage.titleLength || 0,\n        metaDescriptionLength:   homepage.metaDescriptionLength || 0,\n        h1Count:                 homepage.h1Count || 0,\n        h2Count:                 homepage.h2Count || 0,\n        h3Count:                 homepage.h3Count || 0,\n        estimatedWordCount:      homepage.estimatedWordCount || 0,\n        scriptCount:             homepage.scriptCount || 0,\n        headScriptCount:         homepage.headScriptCount || 0,\n        htmlLength:              homepage.htmlLength || 0,\n        hasCanonical:            homepage.hasCanonical === true,\n        canonical:               homepage.canonical || \"\",\n        hasNoindex:              homepage.hasNoindex === true,\n        hasNofollow:             homepage.hasNofollow === true,\n        hasViewport:             homepage.hasViewport === true,\n        hasHreflang:             homepage.hasHreflang === true,\n        hasOgTitle:              homepage.hasOgTitle === true,\n        hasOgDescription:        homepage.hasOgDescription === true,\n        hasOgImage:              homepage.hasOgImage === true,\n        hasTwitterCard:          homepage.hasTwitterCard === true,\n        imageCount:              homepage.imageCount || 0,\n        imageMissingAltCount:    homepage.imageMissingAltCount || 0,\n        internalLinkCount:       homepage.internalLinkCount || 0,\n        externalLinkCount:       homepage.externalLinkCount || 0,\n        hasStructuredData:       homepage.hasStructuredData === true,\n        structuredDataTypes:     homepage.structuredDataTypes || [],\n        hasFavicon:              homepage.hasFavicon === true,\n        hasLazyLoading:          homepage.hasLazyLoading === true,\n        isJsHeavy:               homepage.isJsHeavy === true,\n        pageReason:              homepage.reason || null,\n        security:                homepage.security || {},\n        robotsPresent:           robots.present === true,\n        robotsDisallowAll:       robots.disallowAll === true,\n        robotsDisallowRules:     robots.disallowRules || 0,\n        robotsHasSitemapRef:     robots.hasSitemapDirective === true,\n        sitemapPresent:          sitemap.present === true,\n        sitemapUrlCount:         sitemap.urlCount || 0,\n        sitemapHasIndex:         sitemap.hasSitemapIndex === true,\n      },\n      techFingerprint: tech,\n      evaluatedAt: new Date().toISOString()\n    }\n  }});\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -320
+      ],
+      "id": "a1f3e7ad-3790-4d40-9314-1f0e0b6dc6ce",
+      "name": "SEO OPPORTUNITY SCORING"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ENABLE_HOT_FOR_CRITICAL_WITH_DM = true;\n\nlet seoOpp = null;\nlet businessSignals = {};\nlet websiteStatus = \"UNKNOWN\";\n\nfor (const item of items) {\n  const j = item.json || {};\n  if (j.seoOpportunity) seoOpp = j.seoOpportunity;\n  if (j.businessSignals) {\n    businessSignals = j.businessSignals;\n    if (j.businessSignals.websiteStatus) websiteStatus = j.businessSignals.websiteStatus;\n  }\n  if (j.websiteStatus) websiteStatus = j.websiteStatus;\n  if (j.seoOpportunity?.technical?.websiteStatus) websiteStatus = j.seoOpportunity.technical.websiteStatus;\n}\n\nconst role             = businessSignals.role || \"UNKNOWN\";\nconst detectedHeadline = businessSignals.detectedHeadline || null;\nconst isDecisionMaker  = role === \"DECISION_MAKER\";\n\nconst seoLevelRaw      = seoOpp?.level || \"UNKNOWN\";\nconst effectiveSeoLevel =\n  websiteStatus === \"NO_WEBSITE\" || websiteStatus === \"INVALID_WEBSITE\"\n    ? \"NO_WEBSITE\"\n    : seoLevelRaw;\n\nlet final = \"IGNORE\", leadType = \"COLD_LEAD\", confidence = \"LOW\", reason = \"No actionable SEO signal\";\n\nif (!isDecisionMaker) {\n  final = \"FIND_DECISION_MAKER\"; leadType = \"WARM_LEAD\"; confidence = \"MEDIUM\";\n  reason = \"Target role is not a decision-maker\";\n} else {\n  if (effectiveSeoLevel === \"NO_WEBSITE\") {\n    final = \"CONTACT_SOFT\"; leadType = \"WARM_LEAD\"; confidence = \"HIGH\";\n    reason = \"Decision-maker identified and company has no valid website\";\n  } else if ([\n    \"SITE_UNREACHABLE\",\"SITE_TIMEOUT\",\"SITE_DNS_ERROR\",\n    \"SITE_SSL_ERROR\",\"SITE_FORBIDDEN\",\"SITE_NOT_FOUND\",\"SITE_SERVER_ERROR\"\n  ].includes(effectiveSeoLevel)) {\n    final = \"CONTACT_SOFT\"; leadType = \"WARM_LEAD\"; confidence = \"HIGH\";\n    reason = \"Decision-maker identified and website is unreachable\";\n  } else if (effectiveSeoLevel === \"CRITICAL\") {\n    final      = ENABLE_HOT_FOR_CRITICAL_WITH_DM ? \"CONTACT_NOW\"  : \"CONTACT_SOFT\";\n    leadType   = ENABLE_HOT_FOR_CRITICAL_WITH_DM ? \"HOT_LEAD\"     : \"WARM_LEAD\";\n    confidence = \"HIGH\";\n    reason     = \"Decision-maker identified and SEO is critical\";\n  } else if (effectiveSeoLevel === \"WEAK\") {\n    final = \"CONTACT_SOFT\"; leadType = \"WARM_LEAD\"; confidence = \"MEDIUM\";\n    reason = \"Decision-maker identified and SEO has weaknesses\";\n  } else if (effectiveSeoLevel === \"OK\") {\n    final = \"IGNORE\"; leadType = \"COLD_LEAD\"; confidence = \"MEDIUM\";\n    reason = \"SEO baseline looks healthy\";\n  }\n}\n\nreturn [{\n  json: {\n    decision: {\n      leadType, final, confidence, reason,\n      signals: {\n        seoLevel:       effectiveSeoLevel,\n        siteType:       seoOpp?.siteType       || \"UNKNOWN\",\n        auditCoverage:  seoOpp?.auditCoverage  || \"FULL\",\n        role, websiteStatus,\n        rawScore:       typeof seoOpp?.rawScore === \"number\" ? seoOpp.rawScore : null,\n        seoSource:      seoOpp?.source         || null,\n        seoIssues:      Array.isArray(seoOpp?.issues)  ? seoOpp.issues  : [],\n        seoPassed:      Array.isArray(seoOpp?.passed)  ? seoOpp.passed  : [],\n        seoSkipped:     Array.isArray(seoOpp?.skipped) ? seoOpp.skipped : [],\n        categories:     seoOpp?.categories     || null,\n        techFingerprint: seoOpp?.techFingerprint || {},\n        cwv: seoOpp?.cwv || null,\n      },\n      engine: { name: \"n8n_business_engine\", version: \"v11.0\", decidedAt: new Date().toISOString() },\n      detectedHeadline,\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -240
+      ],
+      "id": "4a3d3b59-b82e-4b55-8217-457fcebf6d14",
+      "name": "BUSINESS DECISION ENGINE VF"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const decision = $json.decision;\nif (!decision) throw new Error(\"UI_MAPPER: decision missing\");\n\nconst {\n  final,\n  confidence = \"LOW\",\n  reason = \"\",\n  detectedHeadline = \"No headline detected\",\n  signals = {}\n} = decision;\n\nconst seoLevel     = signals.seoLevel    || \"UNKNOWN\";\nconst role         = signals.role        || \"UNKNOWN\";\nconst rawScore     = typeof signals.rawScore === \"number\" ? signals.rawScore : null;\nconst categories   = signals.categories  || null;\nconst techFP       = signals.techFingerprint || {};\nconst auditCoverage = signals.auditCoverage || \"FULL\";\nconst siteType     = signals.siteType    || \"UNKNOWN\";\n\n// ── SEO Badge ──────────────────────────────────────────────────────\nconst SEO_MAP = {\n  NO_WEBSITE:        { badge: \"NO WEBSITE\",    color: \"gray\",   emoji: \"—\", label: \"Aucun site web détecté\" },\n  SITE_TIMEOUT:      { badge: \"TIMEOUT\",       color: \"orange\", emoji: \"⏱\", label: \"Site injoignable (timeout)\" },\n  SITE_DNS_ERROR:    { badge: \"DNS ERROR\",     color: \"orange\", emoji: \"⚠\", label: \"Erreur DNS\" },\n  SITE_SSL_ERROR:    { badge: \"SSL ERROR\",     color: \"orange\", emoji: \"🔒\", label: \"Erreur certificat SSL\" },\n  SITE_FORBIDDEN:    { badge: \"BLOCKED 403\",   color: \"orange\", emoji: \"⛔\", label: \"Accès bloqué (403)\" },\n  SITE_NOT_FOUND:    { badge: \"404 NOT FOUND\", color: \"orange\", emoji: \"?\", label: \"Site introuvable (404)\" },\n  SITE_SERVER_ERROR: { badge: \"SERVER 5xx\",    color: \"orange\", emoji: \"💥\", label: \"Erreur serveur\" },\n  SITE_UNREACHABLE:  { badge: \"UNREACHABLE\",   color: \"orange\", emoji: \"⚠\", label: \"Site injoignable\" },\n  CRITICAL:          { badge: \"SEO CRITIQUE\",  color: \"red\",    emoji: \"✕\", label: \"Problèmes SEO critiques\" },\n  WEAK:              { badge: \"SEO FAIBLE\",    color: \"orange\", emoji: \"!\", label: \"Faiblesses SEO détectées\" },\n  OK:                { badge: \"SEO OK\",        color: \"green\",  emoji: \"✓\", label: \"Baseline SEO saine\" },\n};\n\nconst seoEntry = SEO_MAP[seoLevel] || { badge: \"SEO UNKNOWN\", color: \"gray\", emoji: \"?\", label: \"Non évalué\" };\nconst { badge: seoBadge, color: seoColor, emoji: seoEmoji, label: seoLabel } = seoEntry;\n\n// ── Score display ──────────────────────────────────────────────────\nconst scoreDisplay = rawScore !== null ? `${rawScore}/100` : null;\nlet scoreColor = \"gray\";\nif (rawScore !== null) {\n  scoreColor = rawScore >= 75 ? \"green\" : rawScore >= 50 ? \"orange\" : \"red\";\n}\n\n// ── Categories ─────────────────────────────────────────────────────\nlet categoriesDisplay = null;\nif (categories) {\n  categoriesDisplay = {\n    indexability: `${categories.indexability.score}/${categories.indexability.max}`,\n    onPage:       `${categories.onPage.score}/${categories.onPage.max}`,\n    technical:    `${categories.technical.score}/${categories.technical.max}`,\n    social:       `${categories.social.score}/${categories.social.max}`,\n  };\n}\n\n// ── Audit coverage label ───────────────────────────────────────────\nconst COVERAGE_MAP = {\n  FULL:             { label: \"Audit complet\",              color: \"green\"  },\n  PARTIAL_JS:       { label: \"Audit partiel — SPA/CSR\",   color: \"orange\" },\n  PARTIAL_BUILDER:  { label: \"Audit partiel — Site builder\", color: \"orange\" },\n  NONE:             { label: \"Site inaccessible\",          color: \"gray\"   },\n};\nconst coverageEntry = COVERAGE_MAP[auditCoverage] || { label: auditCoverage, color: \"gray\" };\n\n// ── Tech stack label ───────────────────────────────────────────────\nconst techParts = [];\nif (techFP.ecommerce)              techParts.push(techFP.ecommerce);\nif (techFP.cms)                    techParts.push(techFP.cms);\nif (techFP.siteBuilder)            techParts.push(techFP.siteBuilder);\nif (techFP.frameworks?.length > 0) techParts.push(...techFP.frameworks.slice(0, 2));\nconst techStackLabel = techParts.length > 0 ? techParts.join(\" · \") : null;\n\n// ── Site type label ────────────────────────────────────────────────\nconst SITE_TYPE_MAP = {\n  ECOMMERCE:   \"🛍 E-commerce\",\n  CMS:         \"📝 CMS\",\n  BUILDER:     \"🔧 Site Builder\",\n  SPA_APP:     \"⚡ SPA/App\",\n  MODERN_SSR:  \"🚀 SSR moderne\",\n  ENTERPRISE:  \"🏢 Enterprise\",\n  PERSONAL:    \"👤 Site personnel\",\n  JS_APP:      \"⚡ JS Heavy\",\n  CONTENT:     \"📄 Site vitrine\",\n  UNKNOWN:     \"Site web\",\n};\nconst siteTypeLabel = SITE_TYPE_MAP[siteType] || \"Site web\";\n\n// ── Analytics ─────────────────────────────────────────────────────\nconst a = techFP.analytics || {};\nconst analyticsActive = [];\nif (a.hasGTM)    analyticsActive.push(\"GTM\");\nif (a.hasGA4)    analyticsActive.push(\"GA4\");\nif (a.hasFBPixel) analyticsActive.push(\"FB Pixel\");\nif (a.hasHotjar) analyticsActive.push(\"Hotjar\");\nif (a.hasHubspot) analyticsActive.push(\"HubSpot\");\n\n// ── Action mapping ──────────────────────────────────────────────────\nconst ACTION_MAP = {\n  CONTACT_NOW:         { label: \"Contacter maintenant\", color: \"red\",    emoji: \"🔥\", priority: 1 },\n  CONTACT_SOFT:        { label: \"Contacter (soft)\",     color: \"orange\", emoji: \"📬\", priority: 2 },\n  FIND_DECISION_MAKER: { label: \"Trouver le décideur\",  color: \"yellow\", emoji: \"🔍\", priority: 3 },\n  IGNORE:              { label: \"Ignorer\",               color: \"gray\",   emoji: \"⏭\", priority: 4 },\n};\nconst actionMap   = ACTION_MAP[final] || ACTION_MAP.IGNORE;\n\n// ── Issues summary ──────────────────────────────────────────────────\nconst issuesList     = Array.isArray(signals.seoIssues) ? signals.seoIssues : [];\nconst criticalCount  = issuesList.filter(i => typeof i === \"object\" && i.severity === \"critical\").length;\nconst warningCount   = issuesList.filter(i => typeof i === \"object\" && i.severity === \"warning\").length;\n\nreturn {\n  json: {\n    ...$json,\n    ui: {\n      // SEO status\n      seoBadge, seoColor, seoEmoji, seoLabel,\n      // Score\n      scoreDisplay, scoreColor, rawScore,\n      categoriesDisplay,\n      // Site intelligence\n      siteType, siteTypeLabel,\n      techStackLabel,\n      renderType:   techFP.renderType   || null,\n      auditCoverage,\n      auditCoverageLabel: coverageEntry.label,\n      auditCoverageColor: coverageEntry.color,\n      // Analytics\n      analyticsDetected: analyticsActive,\n      hasAnalytics: analyticsActive.length > 0,\n      // Action\n      actionLabel: actionMap.label,\n      actionColor: actionMap.color,\n      actionEmoji: actionMap.emoji,\n      // Lead info\n      role: role === \"DECISION_MAKER\" ? \"Décideur\" : role === \"MARKETING\" ? \"Marketing\" : \"Rôle inconnu\",\n      detectedHeadline,\n      confidence, reason,\n      // Issues summary\n      criticalCount, warningCount,\n      // CWV & Performance\n      mobilePerf:   signals.cwv?.scores?.performance  ?? null,\n      mobileA11y:   signals.cwv?.scores?.accessibility ?? null,\n      psSeoScore:   signals.cwv?.scores?.seo           ?? null,\n      lcpMs:        signals.cwv?.metrics?.lcp ?? null,\n      clsScore:     signals.cwv?.metrics?.cls ?? null,\n      fcpMs:        signals.cwv?.metrics?.fcp ?? null,\n      tbtMs:        signals.cwv?.metrics?.tbt ?? null,\n      cwvFieldLcp:  signals.cwv?.fieldData?.lcp ?? null,\n      cwvFieldCls:  signals.cwv?.fieldData?.cls ?? null,\n      cwvDelta:     signals.cwv?.delta ?? null,\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "30260562-497c-4470-80ab-a3fc1bd50386",
+      "name": "UI MAPPER"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": false
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        288,
+        -240
+      ],
+      "id": "b8564961-23a9-423b-affd-6f8dfe103732",
+      "name": "Merge 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CWV Score Adjuster — applies PageSpeed / CWV corrections on top of rawScore\nconst out = [];\nfor (const item of $input.all()) {\n  const j      = item.json || {};\n  const seoOpp = j.seoOpportunity;\n  const cwv    = j.cwvData;\n  if (!seoOpp || typeof seoOpp.rawScore !== 'number' || !cwv) {\n    out.push({ json: { ...j, cwvAdjusted: false } }); continue;\n  }\n  const base    = seoOpp.rawScore;\n  const scores  = cwv.mobile?.scores  || {};\n  const metrics = cwv.mobile?.cwv     || {};\n  let delta = 0;\n  const cwvIssues = [], cwvPassed = [];\n\n  // Performance\n  const perf = scores.performance;\n  if (typeof perf === 'number') {\n    if      (perf >= 90) { delta += 5; cwvPassed.push('Performance mobile: ' + perf + '/100 — excellente'); }\n    else if (perf >= 70) { delta += 2; cwvPassed.push('Performance mobile: ' + perf + '/100 — bonne'); }\n    else if (perf >= 50) { delta -= 4; cwvIssues.push({ key:'perf_avg',  msg:'Performance mobile: ' + perf + '/100 — lente',          severity:'warning'  }); }\n    else                 { delta -= 9; cwvIssues.push({ key:'perf_poor', msg:'⛔ Performance mobile critique: ' + perf + '/100 — très lente', severity:'critical' }); }\n  }\n\n  // LCP\n  const lcp = metrics.lcp;\n  if (typeof lcp === 'number') {\n    if      (lcp > 4000) { delta -= 4; cwvIssues.push({ key:'lcp_poor', msg:'LCP: ' + (lcp/1000).toFixed(1) + 's — très lent (cible <2.5s)',    severity:'critical' }); }\n    else if (lcp > 2500) { delta -= 2; cwvIssues.push({ key:'lcp_avg',  msg:'LCP: ' + (lcp/1000).toFixed(1) + 's — à améliorer (cible <2.5s)', severity:'warning'  }); }\n    else                 { cwvPassed.push('LCP OK: ' + (lcp/1000).toFixed(1) + 's'); }\n  }\n\n  // CLS\n  const cls = metrics.cls;\n  if (typeof cls === 'number') {\n    if      (cls > 0.25) { delta -= 3; cwvIssues.push({ key:'cls_poor', msg:'CLS: ' + cls.toFixed(3) + ' — instable (cible <0.1)',      severity:'warning' }); }\n    else if (cls > 0.1)  { delta -= 1; cwvIssues.push({ key:'cls_avg',  msg:'CLS: ' + cls.toFixed(3) + ' — à améliorer (cible <0.1)', severity:'info'    }); }\n    else                 { cwvPassed.push('CLS OK: ' + cls.toFixed(3)); }\n  }\n\n  // Accessibility\n  const a11y = scores.accessibility;\n  if (typeof a11y === 'number') {\n    if      (a11y >= 90) { delta += 2; cwvPassed.push('Accessibilité: ' + a11y + '/100'); }\n    else if (a11y < 70)  { delta -= 2; cwvIssues.push({ key:'a11y_poor', msg:'Accessibilité: ' + a11y + '/100', severity:'warning' }); }\n  }\n\n  // PageSpeed SEO audit\n  const psSeo = scores.seo;\n  if (typeof psSeo === 'number') {\n    if   (psSeo < 70) { delta -= 3; cwvIssues.push({ key:'ps_seo_poor', msg:'PageSpeed SEO: ' + psSeo + '/100', severity:'warning' }); }\n    else              { cwvPassed.push('PageSpeed SEO: ' + psSeo + '/100'); }\n  }\n\n  // Inner pages (info only)\n  if (cwv.innerPages?.blog?.reachable)     cwvPassed.push('/blog accessible — contenu SEO détecté');\n  if (cwv.innerPages?.services?.reachable) cwvPassed.push('/services accessible — structure du site claire');\n\n  // Carbon (info only)\n  if (cwv.carbon) {\n    cwvPassed.push(cwv.carbon.green\n      ? 'Hébergement vert (éco-responsable)'\n      : 'Hébergement non vert — impact carbone à considérer');\n  }\n\n  const adjusted = Math.max(0, Math.min(100, base + delta));\n  const UNREACHABLE = ['NO_WEBSITE','SITE_UNREACHABLE','SITE_TIMEOUT','SITE_DNS_ERROR','SITE_SSL_ERROR','SITE_FORBIDDEN','SITE_NOT_FOUND','SITE_SERVER_ERROR'];\n  let lvl = seoOpp.level;\n  if (!UNREACHABLE.includes(lvl)) {\n    const hasCrit = [...(seoOpp.issues || []), ...cwvIssues].some(i => i && i.severity === 'critical');\n    if      (hasCrit || adjusted < 40) lvl = 'CRITICAL';\n    else if (adjusted < 65)            lvl = 'WEAK';\n    else                               lvl = 'OK';\n  }\n\n  out.push({ json: { ...j, cwvAdjusted: true, seoOpportunity: {\n    ...seoOpp,\n    rawScore: adjusted,\n    level:    lvl,\n    issues:   [...(seoOpp.issues  || []), ...cwvIssues],\n    passed:   [...(seoOpp.passed  || []), ...cwvPassed],\n    cwv: { delta, base, adjusted, scores, metrics, fieldData: cwv.mobile?.fieldData || null, carbon: cwv.carbon || null, gatheredAt: cwv.gatheredAt || null },\n  } } });\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        168,
+        -320
+      ],
+      "id": "c0611e65-d0c3-4acc-8722-62da6d54531c",
+      "name": "CWV Score Adjuster"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/pagespeedonline/v5/runPagespeed",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{$json.websiteNormalized}}"
+            },
+            {
+              "name": "strategy",
+              "value": "mobile"
+            },
+            {
+              "name": "key",
+              "value": "YOUR_PAGESPEED_API_KEY"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 35000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1520,
+        560
+      ],
+      "id": "af3ed7de-1f96-406a-bf05-e181dbd6c62c",
+      "name": "HTTP PageSpeed",
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract CWV — reads PageSpeed response, produces cwvData\nconst j = $json;\n\nfunction extractPS(data) {\n  if (!data || !data.lighthouseResult) return null;\n  const lhr  = data.lighthouseResult;\n  const cats = lhr.categories || {};\n  const aud  = lhr.audits    || {};\n  const s = c => (c && typeof c.score === 'number') ? Math.round(c.score * 100) : null;\n  const n = k => { const v = aud[k]?.numericValue; return typeof v === 'number' ? Math.round(v) : null; };\n  return {\n    scores: {\n      performance:   s(cats.performance),\n      seo:           s(cats.seo),\n      accessibility: s(cats.accessibility),\n      bestPractices: s(cats['best-practices']),\n    },\n    cwv: {\n      lcp: n('largest-contentful-paint'),\n      cls: typeof aud['cumulative-layout-shift']?.numericValue === 'number'\n        ? Math.round(aud['cumulative-layout-shift'].numericValue * 1000) / 1000 : null,\n      fcp: n('first-contentful-paint'),\n      tbt: n('total-blocking-time'),\n      si:  n('speed-index'),\n    },\n    fieldData: {\n      lcp: data.loadingExperience?.metrics?.LARGEST_CONTENTFUL_PAINT_MS?.category  || null,\n      cls: data.loadingExperience?.metrics?.CUMULATIVE_LAYOUT_SHIFT_SCORE?.category || null,\n      fcp: data.loadingExperience?.metrics?.FIRST_CONTENTFUL_PAINT_MS?.category    || null,\n    },\n  };\n}\n\nreturn { json: {\n  cwvData: {\n    mobile: extractPS(j),\n    gatheredAt: new Date().toISOString(),\n  }\n} };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        640
+      ],
+      "id": "69fd9b8a-b25a-4333-b9b6-7164837c77c7",
+      "name": "Extract CWV"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Homepage": {
+      "main": [
+        [
+          {
+            "node": "SEO Source Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP robot": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "HTTP sitemap.xml": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Business Signals VF": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Normalize SEO Payload": {
+      "main": [
+        [
+          {
+            "node": "SEO OPPORTUNITY SCORING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Normalize SEO Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Normalize website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize website": {
+      "main": [
+        [
+          {
+            "node": "HTTP Homepage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP robot",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP sitemap.xml",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Business Signals VF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "HTTP PageSpeed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEO Source Detector": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEO OPPORTUNITY SCORING": {
+      "main": [
+        [
+          {
+            "node": "CWV Score Adjuster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BUSINESS DECISION ENGINE VF": {
+      "main": [
+        [
+          {
+            "node": "UI MAPPER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UI MAPPER": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge 2": {
+      "main": [
+        [
+          {
+            "node": "BUSINESS DECISION ENGINE VF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CWV Score Adjuster": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP PageSpeed": {
+      "main": [
+        [
+          {
+            "node": "Extract CWV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CWV": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9d2eb927-03cf-411c-9841-3074183d2f8a",
+  "meta": {
+    "instanceId": "3bd052681840ec422863ecf985538ff70d7f8c497e58599df231d9e2dc37365b"
+  },
+  "tags": []
+}
