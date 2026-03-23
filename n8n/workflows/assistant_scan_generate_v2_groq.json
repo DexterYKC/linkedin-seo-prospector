@@ -1,0 +1,116 @@
+{
+  "name": "assistant_scan_generate_v2_groq",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assistant-scan-v2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "assistant-scan-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compatible avec toutes les versions de n8n\nconst item = $input.first();\nconst body = item.json?.body || item.json || {};\nconst prompt = body?.state?.prompt || body?.prompt || '';\n\nconst systemPrompt = [\n  'You are an expert LinkedIn lead generation assistant for SEO agencies and consultants. Your users are SEO professionals looking for potential clients — businesses that likely need SEO or digital marketing services. The \"need for SEO\" is always implicit: the user only describes WHO their target is (role, industry, location, company size), never what service they sell.',\n  '',\n  'Output ONLY a valid JSON object with exactly two keys: \"people\" and \"company\". No explanation, no markdown, just the JSON.',\n  '',\n  '=== LINKEDIN BOOLEAN SYNTAX ===',\n  '- Operators MUST be UPPERCASE: AND, OR, NOT',\n  '- Quote multi-word phrases: \"Content Marketing\", \"Co-Founder\"',\n  '- Group alternatives: (CEO OR Founder OR PDG)',\n  '- Max ~220 chars per query — stay concise and impactful',\n  '',\n  '=== LANGUAGE & MARKET DETECTION ===',\n  '- Detect the language from the user description (FR or EN)',\n  '- For French market (France, Paris, Lyon...): include BOTH French and English professional titles',\n  '- For English market: use English titles only',\n  '- French title equivalents to always consider:',\n  '  * CEO / PDG / Dirigeant',\n  '  * Founder / Fondateur / \"Co-fondateur\"',\n  '  * CMO / \"Directeur Marketing\" / \"Responsable Marketing\"',\n  '  * CTO / \"Directeur Technique\"',\n  '  * \"Head of Growth\" / \"Responsable Croissance\"',\n  '  * \"Business Developer\" / \"Développeur Commercial\"',\n  '',\n  '=== PEOPLE QUERY STRATEGY ===',\n  'CRITICAL RULES — violations cause zero results on LinkedIn free search:',\n  '1. NEVER start a query with a parenthesized group. Always start with a SINGLE PLAIN KEYWORD first, then add groups.',\n  '   CORRECT: \"startup AND (CEO OR Founder) AND Paris\"',\n  '   WRONG:   \"(CEO OR Founder) AND startup AND Paris\"',\n  '2. Max 3 AND groups total',\n  '3. Max 4 alternatives per OR group',\n  '4. Prefer single unquoted words: ecommerce not \"E-commerce Manager\", founder not \"Co-Founder\"',\n  '5. Only quote a 2-word phrase if truly inseparable (e.g. \"digital marketing\")',\n  '6. Location goes last as a plain AND word',\n  '',\n  '=== COMPANY QUERY STRATEGY ===',\n  'Same rules. Always start with a plain keyword, never with a group.',\n  '',\n  '=== EXAMPLES ===',\n  'Input: \"fondateurs de startups SaaS à Paris\"',\n  '{\"people\":\"startup AND (CEO OR Founder OR PDG OR Fondateur) AND Paris\",\"company\":\"startup AND Paris\"}',\n  '',\n  'Input: \"SaaS startup founders in Paris\"',\n  '{\"people\":\"startup AND (CEO OR Founder OR PDG OR Fondateur) AND Paris\",\"company\":\"startup AND Paris\"}',\n  '',\n  'Input: \"e-commerce managers in London\"',\n  '{\"people\":\"ecommerce AND (Manager OR Director OR CMO OR Head) AND London\",\"company\":\"ecommerce AND London\"}',\n  '',\n  'Input: \"directeurs e-commerce de PME en France\"',\n  '{\"people\":\"ecommerce AND (Directeur OR Responsable OR CMO) AND France\",\"company\":\"ecommerce AND France\"}',\n  '',\n  'Input: \"directeurs marketing de PME en France\"',\n  '{\"people\":\"marketing AND (CMO OR Directeur OR Responsable) AND France\",\"company\":\"marketing AND France\"}',\n  '',\n  'Input: \"marketing directors at B2B software companies in London\"',\n  '{\"people\":\"software AND (CMO OR \\\\\"Marketing Director\\\\\" OR \\\\\"VP Marketing\\\\\") AND London\",\"company\":\"software AND (SaaS OR B2B) AND London\"}'\n].join('\\n');\n\nconst groqBody = JSON.stringify({\n  model: 'llama-3.3-70b-versatile',\n  messages: [\n    { role: 'system', content: systemPrompt },\n    { role: 'user', content: String(prompt).slice(0, 600) || 'SaaS startup founder' }\n  ],\n  temperature: 0.2,\n  max_tokens: 400,\n  response_format: { type: 'json_object' }\n});\n\nreturn [{ json: { groqBody, debugPrompt: prompt } }];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.groqBody }}",
+        "options": {
+          "timeout": 12000
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Groq LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "groq-api-credential",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json;\nconst content = response.choices?.[0]?.message?.content || '{}';\n\nlet queries = { people: '', company: '' };\ntry {\n  const clean = content.trim().replace(/^```json?\\s*/i, '').replace(/\\s*```$/, '');\n  const parsed = JSON.parse(clean);\n  queries.people = String(parsed.people || '').trim();\n  queries.company = String(parsed.company || '').trim();\n} catch (e) {\n  const pm = content.match(/\"people\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)+)\"/);\n  const cm = content.match(/\"company\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)+)\"/);\n  if (pm) queries.people = pm[1];\n  if (cm) queries.company = cm[1];\n}\n\nreturn [{ json: { queries } }];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ queries: $json.queries }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Prepare Request", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [{ "node": "Groq LLM", "type": "main", "index": 0 }]
+      ]
+    },
+    "Groq LLM": {
+      "main": [
+        [{ "node": "Parse Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "assistant-scan-v2-groq",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
