@@ -1,0 +1,104 @@
+{
+  "name": "lead_message_generate_v3.0_groq",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "seo-prospector/message-generate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-672, 416],
+      "id": "ba6ed017-9706-41c9-ae47-d15c5879fd50",
+      "name": "Webhook",
+      "webhookId": "623128e3-72bf-43b3-97d9-466d44c4ebb5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────────\n// lead_message_generate — v3.0 | Build AI Prompt\n// Tones: professional | friendly | direct | consultative\n// Context: optional user-supplied context injected into prompt\n// Single message output (no variants)\n// ─────────────────────────────────────────────────────────────────────────\n\nconst src  = ($json.body && typeof $json.body === \"object\") ? $json.body : $json;\nconst lead = (src.lead  && typeof src.lead  === \"object\")  ? src.lead  : {};\nconst lang = String(src.language || \"fr\").toLowerCase().startsWith(\"fr\") ? \"fr\" : \"en\";\nconst tone = String(src.tone || \"professional\").toLowerCase();\nconst opportunityId = String(src.opportunityId || \"\").trim() || null;\nconst userContext = String(src.context || \"\").trim();\n\n// ── Select opportunity ───────────────────────────────────────────────────\nconst opps   = Array.isArray(lead.opportunities) ? lead.opportunities : [];\nconst chosen = opps.find(o => String(o?.id || \"\") === opportunityId)\n  || opps.find(o => String(o?.opportunityStatus || \"\").toUpperCase() === \"PRIMARY\")\n  || opps[0] || {};\n\n// ── Resolve objects ──────────────────────────────────────────────────────\nconst ui       = (chosen?.ui && typeof chosen.ui === \"object\") ? chosen.ui\n               : (lead?.ui   && typeof lead.ui   === \"object\") ? lead.ui : {};\n\nconst decision = (lead?.decisionRaw && typeof lead.decisionRaw === \"object\") ? lead.decisionRaw\n               : (lead?.decision    && typeof lead.decision    === \"object\") ? lead.decision : {};\n\nconst signals  = (decision?.signals && typeof decision.signals === \"object\") ? decision.signals : {};\nconst tech     = (signals?.techFingerprint && typeof signals.techFingerprint === \"object\") ? signals.techFingerprint : {};\nconst cats     = (signals?.categories && typeof signals.categories === \"object\") ? signals.categories : {};\nconst analytics = (tech?.analytics && typeof tech.analytics === \"object\") ? tech.analytics : {};\n\n// ── Key data ─────────────────────────────────────────────────────────────\nconst firstName = String(lead?.name || \"\").trim().split(/\\s+/)[0] || \"there\";\nconst fullName  = String(lead?.name || \"\").trim() || \"—\";\nconst company   = String(chosen?.company || lead?.company || \"—\").trim();\nconst website   = String(chosen?.website || lead?.website || \"\").trim();\nconst role      = String(ui.role || signals.role || \"—\").trim();\nconst headline  = String(ui.detectedHeadline || decision.detectedHeadline || \"\").trim();\nconst rawScore  = typeof signals.rawScore === \"number\" ? signals.rawScore : null;\n\n// ── SEO issues ────────────────────────────────────────────────────────────\nconst rawIssues  = Array.isArray(signals.seoIssues) ? signals.seoIssues : [];\nconst rawPassed  = Array.isArray(signals.seoPassed)  ? signals.seoPassed  : [];\n\nconst criticals = rawIssues.filter(i => typeof i === \"object\" && i.severity === \"critical\").map(i => i.msg || i.key).filter(Boolean);\nconst warnings  = rawIssues.filter(i => typeof i === \"object\" && i.severity === \"warning\").map(i => i.msg || i.key).filter(Boolean);\nconst infos     = rawIssues.filter(i => typeof i === \"object\" && i.severity === \"info\").map(i => i.msg || i.key).filter(Boolean);\n\n// ── Tech context ─────────────────────────────────────────────────────────\nconst techStack = [tech.cms, tech.ecommerce, tech.siteBuilder, ...(tech.frameworks || [])].filter(Boolean).join(\", \") || \"inconnu\";\nconst renderType = tech.renderType || \"UNKNOWN\";\nconst analyticsTools = [];\nif (analytics.hasGTM) analyticsTools.push(\"GTM\");\nif (analytics.hasGA4) analyticsTools.push(\"GA4\");\nif (analytics.hasGA3) analyticsTools.push(\"UA\");\nif (analytics.hasFBPixel) analyticsTools.push(\"Facebook Pixel\");\nif (analytics.hasHotjar) analyticsTools.push(\"Hotjar\");\nif (analytics.hasHubspot) analyticsTools.push(\"HubSpot\");\n\n// ── Score breakdown ──────────────────────────────────────────────────────\nconst catLines = [];\nif (cats.indexability) catLines.push(`Indexabilité: ${cats.indexability.score}/${cats.indexability.max}`);\nif (cats.onPage)       catLines.push(`On-Page: ${cats.onPage.score}/${cats.onPage.max}`);\nif (cats.technical)    catLines.push(`Technique: ${cats.technical.score}/${cats.technical.max}`);\nif (cats.social)       catLines.push(`Social: ${cats.social.score}/${cats.social.max}`);\n\n// ── System prompts ────────────────────────────────────────────────────────\nconst SYSTEM_FR = `Tu es un expert SEO consultant indépendant qui prospecte des décideurs sur LinkedIn.\\nTu rédiges des messages de prospection LinkedIn ultra-personnalisés, courts, directs et sans bullshit.\\nTon style : naturel, humain, expert mais accessible. PAS de pitch commercial. PAS de jargon creux.\\nTu parles des vrais problèmes détectés, avec des mots simples.\\nLe message doit donner envie de répondre, pas de fermer l'onglet.`;\n\nconst SYSTEM_EN = `You are an independent SEO consultant prospecting decision-makers on LinkedIn.\\nYou write ultra-personalized, short, direct LinkedIn messages with no corporate fluff.\\nYour style: natural, human, expert but accessible. NO sales pitch. NO empty jargon.\\nYou talk about real detected problems, in simple terms.\\nThe message must make them want to reply, not close the tab.`;\n\nconst FR = lang === \"fr\";\n\n// ── Tone instruction ──────────────────────────────────────────────────────\nconst TONE_INSTRUCTION = {\n  professional: FR\n    ? \"Ton professionnel, direct, concis. Vouvoiement. Expert mais accessible. Confiant sans être agressif.\"\n    : \"Professional, direct, concise tone. Expert but accessible. Confident, not pushy.\",\n  friendly: FR\n    ? \"Ton chaleureux, naturel et humain, sans pression commerciale. Approche subtile, comme un échange entre pairs.\"\n    : \"Warm, natural and human tone, no sales pressure. Subtle approach, like a peer-to-peer exchange.\",\n  direct: FR\n    ? \"Ton très direct, chiffres et faits bruts. Zéro fioritures. Va droit au but dès la première phrase.\"\n    : \"Very direct tone, raw facts and numbers. Zero frills. Get straight to the point from the first sentence.\",\n  consultative: FR\n    ? \"Ton consultatif, posture d'expert-conseil. Pose les bonnes questions, diagnostic bienveillant. Curiosité professionnelle sincère.\"\n    : \"Consultative tone, expert-advisor posture. Ask the right questions, helpful diagnostic. Sincere professional curiosity.\",\n}[tone] || (FR ? \"Ton professionnel, direct, concis.\" : \"Professional, direct, concise tone.\");\n\n// ── User context block ────────────────────────────────────────────────────\nconst contextBlock = userContext\n  ? (FR\n    ? `\\n═══ CONTEXTE UTILISATEUR ═══\\n${userContext}\\n`\n    : `\\n═══ USER CONTEXT ═══\\n${userContext}\\n`)\n  : \"\";\n\n// ── Issue summaries ───────────────────────────────────────────────────────\nconst issuesSummary = [\n  criticals.length > 0 ? (FR ? `Problèmes CRITIQUES (${criticals.length}):\\n- ` : `CRITICAL issues (${criticals.length}):\\n- `) + criticals.slice(0, 4).join(\"\\n- \") : null,\n  warnings.length  > 0 ? (FR ? `Alertes (${warnings.length}):\\n- `            : `Warnings (${warnings.length}):\\n- `)  + warnings.slice(0, 3).join(\"\\n- \")  : null,\n  infos.length     > 0 ? (FR ? `Points d'amélioration (${infos.length}):\\n- ` : `Improvement points (${infos.length}):\\n- `) + infos.slice(0, 2).join(\"\\n- \") : null,\n].filter(Boolean).join(\"\\n\\n\");\n\nconst passedSummary = rawPassed.length > 0\n  ? (FR ? `Ce qui fonctionne déjà bien:\\n- ` : `What already works well:\\n- `) + rawPassed.slice(0, 4).join(\"\\n- \")\n  : \"\";\n\nconst siteTypeLabel = ui.siteTypeLabel || signals.siteType || \"site web\";\nconst auditCoverage = ui.auditCoverageLabel || signals.auditCoverage || \"\";\n\nconst USER_PROMPT = FR ? `\nÉcris UN seul message de prospection LinkedIn pour le lead suivant.\n\n═══ CONTEXTE LEAD ═══\nPrénom: ${firstName}\nNom complet: ${fullName}\nPoste: ${headline || role}\nEntreprise: ${company}\nSite web: ${website || \"(aucun site détecté)\"}\n\n═══ RÉSULTATS AUDIT SEO ═══\nScore SEO: ${rawScore !== null ? `${rawScore}/100` : \"non disponible\"}\nNiveau: ${signals.seoLevel || \"INCONNU\"}\nType de site: ${siteTypeLabel}\nTech stack: ${techStack}\nRendu: ${renderType}\nCouverture audit: ${auditCoverage}\n\nScores par catégorie:\n${catLines.join(\"\\n\") || \"Non disponible\"}\n\n${issuesSummary}\n\n${passedSummary}\n\nAnalytics détectés: ${analyticsTools.length > 0 ? analyticsTools.join(\", \") : \"Aucun\"}${contextBlock}\n═══ INSTRUCTIONS ═══\n- Longueur cible: 80-130 mots MAX (LinkedIn, pas un email)\n- ${TONE_INSTRUCTION}\n- NE PAS mentionner \"audit SEO\" ou \"j'ai audité votre site\" directement — sois subtil\n- Commence par quelque chose de spécifique à ${company} ou leur situation\n- 1 ou 2 problèmes max à mentionner, avec l'impact business concret (visibilité, clients perdus, etc.)\n- Termine par une question ouverte ou une proposition de valeur légère\n- PAS de signature, PAS de \"Cordialement\"\n- Génère UN seul message, pas de variantes, pas de numérotation\n` : `\nWrite ONE single LinkedIn prospecting message for the following lead.\n\n═══ LEAD CONTEXT ═══\nFirst name: ${firstName}\nFull name: ${fullName}\nPosition: ${headline || role}\nCompany: ${company}\nWebsite: ${website || \"(no website detected)\"}\n\n═══ SEO AUDIT RESULTS ═══\nSEO Score: ${rawScore !== null ? `${rawScore}/100` : \"not available\"}\nLevel: ${signals.seoLevel || \"UNKNOWN\"}\nSite type: ${siteTypeLabel}\nTech stack: ${techStack}\nRender: ${renderType}\nAudit coverage: ${auditCoverage}\n\nCategory scores:\n${catLines.join(\"\\n\") || \"Not available\"}\n\n${issuesSummary}\n\n${passedSummary}\n\nAnalytics detected: ${analyticsTools.length > 0 ? analyticsTools.join(\", \") : \"None\"}${contextBlock}\n═══ INSTRUCTIONS ═══\n- Target length: 80-130 words MAX (LinkedIn message, not an email)\n- ${TONE_INSTRUCTION}\n- Do NOT say \"SEO audit\" or \"I audited your site\" directly — be subtle\n- Start with something specific to ${company} or their situation\n- Mention 1 or 2 issues max, with concrete business impact (lost visibility, lost customers, etc.)\n- End with an open question or a light value proposition\n- NO signature, NO \"Best regards\"\n- Generate ONE single message, no variants, no numbering\n`;\n\nreturn [{\n  json: {\n    systemPrompt: FR ? SYSTEM_FR : SYSTEM_EN,\n    userPrompt:   USER_PROMPT.trim(),\n    _ctx: {\n      lang,\n      tone,\n      firstName,\n      company,\n      website,\n      seoLevel:  signals.seoLevel || \"\",\n      rawScore,\n      criticals: criticals.slice(0, 3),\n      warnings:  warnings.slice(0, 3),\n      leadType:  lead.leadType || decision.leadType || \"\",\n      action:    ui.actionLabel || decision.final || \"\",\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 416],
+      "id": "ac909c55-8395-4d47-975c-a3a9e89f28a0",
+      "name": "Build Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\"Content-Type\": \"application/json\", \"Authorization\": \"Bearer YOUR_GROQ_API_KEY\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\":\"llama-3.3-70b-versatile\",\"messages\":[{\"role\":\"system\",\"content\":{{ JSON.stringify($json.systemPrompt) }}},{\"role\":\"user\",\"content\":{{ JSON.stringify($json.userPrompt) }}}],\"temperature\":0.82,\"max_tokens\":600}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-96, 416],
+      "id": "2fad5313-5bdc-4de5-9834-aefb5426fe01",
+      "name": "Groq Llama 3.3",
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────────\n// lead_message_generate — v3.0 | Parse Groq Response (single message)\n// ─────────────────────────────────────────────────────────────────────────\n\nconst j    = $json;\nconst prev = $('Build Prompt').item.json;\nconst ctx  = prev?._ctx || {};\n\n// ── Extract text ──────────────────────────────────────────────────────────\nconst rawText =\n  j?.choices?.[0]?.message?.content ||\n  j?.candidates?.[0]?.content?.parts?.[0]?.text ||\n  j?.text || j?.content || j?.message || null;\n\n// ── Error handling ────────────────────────────────────────────────────────\nif (!rawText) {\n  const errMsg = j?.error?.message || j?.error?.error?.message || \"No response from AI model\";\n  return [{ json: { ok: false, error: errMsg, message: null, context: ctx } }];\n}\n\n// ── Usage stats ───────────────────────────────────────────────────────────\nconst usage = j?.usage || j?.usageMetadata || {};\n\nreturn [{\n  json: {\n    ok: true,\n    message: rawText.trim(),\n    context: {\n      ...ctx,\n      generatedAt:     new Date().toISOString(),\n      model:           \"llama-3.3-70b-versatile\",\n      provider:        \"groq\",\n      promptTokens:    usage.prompt_tokens     || usage.promptTokenCount     || null,\n      candidateTokens: usage.completion_tokens || usage.candidatesTokenCount || null,\n      totalTokens:     usage.total_tokens      || usage.totalTokenCount      || null,\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [208, 416],
+      "id": "c79f4f9f-2ba3-45be-9f2e-b8a862d3bd55",
+      "name": "Parse Response"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [496, 416],
+      "id": "44fc5fe2-17cc-449c-86ce-90d057e4a195",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Prompt": {
+      "main": [[{ "node": "Groq Llama 3.3", "type": "main", "index": 0 }]]
+    },
+    "Groq Llama 3.3": {
+      "main": [[{ "node": "Parse Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Response": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d393f463-6738-4018-a6b9-186631165b9f",
+  "meta": {
+    "instanceId": "3bd052681840ec422863ecf985538ff70d7f8c497e58599df231d9e2dc37365b"
+  },
+  "id": "rWv2hJx566wJdIm3",
+  "tags": []
+}
