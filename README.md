@@ -12,6 +12,26 @@ Chrome extension ──► api-saas (auth, quotas, billing, leads) ──► n8n
 
 **n8n is a core part of the product**, not an add-on. The lead scanning and scoring pipeline, the business decision engine (hot / warm / ignore), the LinkedIn Boolean-search assistant, the AI outreach prompts and the SEO CSV export all run as n8n workflows on my self-hosted instance, called by the API through webhooks. If n8n is unreachable the API falls back to a simpler local generator. See [`n8n/`](n8n/README.md) for the workflows and a walkthrough.
 
+## Screenshots
+
+Each screen pairs the web app's sign-in page and marketing panel (left) with the extension side panel (right). Captured on test data; names, photos, companies and websites of real LinkedIn profiles are masked.
+
+**Leads: every captured prospect is classified hot / warm / cold.** A hot lead is a decision-maker whose website has critical SEO problems; the SEO snapshot and the verdict reason are one click away.
+
+![Leads list and SEO snapshot](docs/screenshots/leads.png)
+
+**SEO audit: a score out of 100 per prospect website**, with key metrics and the issues found, split into critical and warnings (missing H1, slow LCP, no robots.txt, no canonical, no sitemap). The audit is produced by the n8n scan workflow.
+
+![SEO audit detail](docs/screenshots/seo-audit.png)
+
+**Messages: AI-drafted outreach that cites the real audit findings.** Choose a tone (professional, friendly, direct, consultative), add optional context, edit the draft, then send it manually.
+
+![Message generation](docs/screenshots/messages.png)
+
+**Dashboard: plan quotas and monthly usage** for scans, messages and SEO exports.
+
+![Dashboard and quotas](docs/screenshots/dashboard.png)
+
 ## The product idea: how n8n turns this into a SaaS
 
 I designed this as a SaaS where **n8n is the engine, and a very large part of the product's value**. The way I saw it, there are three layers, each with one job:
