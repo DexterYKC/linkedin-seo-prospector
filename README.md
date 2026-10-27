@@ -16,6 +16,10 @@ Chrome extension ──► api-saas (auth, quotas, billing, leads) ──► n8n
 
 Each screen pairs the web app's sign-in page and marketing panel (left) with the extension side panel (right). Captured on test data; names, photos, companies and websites of real LinkedIn profiles are masked.
 
+**Scan: the capture pipeline at a glance.** Running or paused status, the plan's monthly scan limit, and a live activity log of the extension's events (blurred here). Browsing LinkedIn stays manual; capture and scoring run in the background.
+
+![Scan status and activity](docs/screenshots/scan.png)
+
 **Leads: every captured prospect is classified hot / warm / cold.** A hot lead is a decision-maker whose website has critical SEO problems; the SEO snapshot and the verdict reason are one click away.
 
 ![Leads list and SEO snapshot](docs/screenshots/leads.png)
