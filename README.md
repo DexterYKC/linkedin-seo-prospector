@@ -71,3 +71,7 @@ Chrome Extension MV3 (vanilla JS, service worker, side panel) · **n8n (self-hos
 ## Configuration
 
 The API expects the environment variables referenced at the top of `api-saas/src/server.js` (Supabase URL and service key, the four `N8N_WEBHOOK_*` URLs, Groq, Lemon Squeezy, NOWPayments, Resend, `EXT_API_KEY`). No values are included in this repo.
+
+## License
+
+Personal portfolio project, shared for review purposes. Not licensed for reuse or redistribution.
